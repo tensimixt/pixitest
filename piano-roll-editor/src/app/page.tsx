@@ -7,7 +7,7 @@ const PIANO_WIDTH = 100
 const WHITE_KEY_HEIGHT = 20
 const BLACK_KEY_HEIGHT = 12
 const BLACK_KEY_OFFSET = 12
-const TOTAL_KEYS = 88 // Standard piano has 88 keys
+const TOTAL_KEYS = 108 // Updated to cover C0 to B8
 
 export default function Home() {
   const pianoContainerRef = useRef<HTMLDivElement>(null)
@@ -25,8 +25,32 @@ export default function Home() {
     )
       return
 
-    // Calculate the total height needed for all the white keys
-    const totalWhiteKeys = TOTAL_KEYS - Math.floor((TOTAL_KEYS / 12) * 5)
+    // **Helper function to determine if a key is black**
+    const isBlackKey = (keyNumber: number): boolean => {
+      const noteIndex = keyNumber % 12
+      return [1, 3, 6, 8, 10].includes(noteIndex)
+    }
+
+    // **Helper function to get the key name**
+    const getKeyName = (keyNumber: number): string => {
+      const octave = Math.floor(keyNumber / 12) // Adjusted octave calculation
+      const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
+      const noteIndex = keyNumber % 12
+      return `${noteNames[noteIndex]}${octave}`
+    }
+
+    // **Calculate the total number of white keys**
+    const totalWhiteKeys = (() => {
+      let count = 0
+      for (let i = 0; i < TOTAL_KEYS; i++) {
+        if (!isBlackKey(i)) {
+          count++
+        }
+      }
+      return count
+    })()
+
+    // **Calculate the total height needed for all the white keys**
     const totalHeight = totalWhiteKeys * WHITE_KEY_HEIGHT
 
     // Create the PIXI Application for the piano keys
@@ -52,20 +76,6 @@ export default function Home() {
 
     gridAppRef.current = gridApp
     gridContainerRef.current.appendChild(gridApp.view as HTMLCanvasElement)
-
-    // **Helper function to determine if a key is black**
-    const isBlackKey = (keyNumber: number): boolean => {
-      const octavePosition = keyNumber % 12
-      return [1, 3, 6, 8, 10].includes(octavePosition)
-    }
-
-    // **Helper function to get the key name**
-    const getKeyName = (keyNumber: number): string => {
-      const octave = Math.floor(keyNumber / 12) - 1
-      const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
-      const noteIndex = keyNumber % 12
-      return `${noteNames[noteIndex]}${octave}`
-    }
 
     // **Draw piano keys in pianoApp**
     const drawPianoKeys = () => {
@@ -135,7 +145,11 @@ export default function Home() {
           // Center the text on the key
           keyText.anchor.set(0.5)
           keyText.x = (PIANO_WIDTH - BLACK_KEY_OFFSET) / 2
-          keyText.y = whiteKeyY - WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET + BLACK_KEY_HEIGHT / 2
+          keyText.y =
+            whiteKeyY -
+            WHITE_KEY_HEIGHT +
+            BLACK_KEY_OFFSET +
+            BLACK_KEY_HEIGHT / 2
 
           // Add key and text to the stage
           pianoStage.addChild(key)
