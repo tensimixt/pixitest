@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -295,8 +296,9 @@ export default function Home() {
     gridApp.renderer.resize(newWidth, totalHeight)
 
     // Set canvas style to prevent scaling
-    gridApp.view.style.width = `${newWidth / gridApp.renderer.resolution}px`
-    gridApp.view.style.height = `${totalHeight / gridApp.renderer.resolution}px`
+    const gridCanvas = gridApp.view as HTMLCanvasElement
+    gridCanvas.style.width = `${newWidth / gridApp.renderer.resolution}px`
+    gridCanvas.style.height = `${totalHeight / gridApp.renderer.resolution}px`
 
     // Redraw grid and notes
     drawGrid(newWidth)
@@ -324,8 +326,9 @@ export default function Home() {
     gridApp.renderer.resize(newWidth, totalHeight)
 
     // Set canvas style to prevent scaling
-    gridApp.view.style.width = `${newWidth / gridApp.renderer.resolution}px`
-    gridApp.view.style.height = `${totalHeight / gridApp.renderer.resolution}px`
+    const gridCanvas = gridApp.view as HTMLCanvasElement
+    gridCanvas.style.width = `${newWidth / gridApp.renderer.resolution}px`
+    gridCanvas.style.height = `${totalHeight / gridApp.renderer.resolution}px`
 
     drawGrid(newWidth)
     if (notes.length > 0) {
