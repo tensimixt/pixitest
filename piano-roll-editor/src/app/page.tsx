@@ -398,7 +398,7 @@ export default function Home() {
           style={{
             maxHeight: '600px',
             overflowX: 'auto', // Enable horizontal scrolling
-            whiteSpace: 'nowrap', // Prevent canvas from wrapping
+            whiteSpace: 'nowrap', // Prevent canvas from wrappings
           }}
         />
       </div>
