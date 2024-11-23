@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import * as PIXI from 'pixi.js'
 
 const PIANO_WIDTH = 100
