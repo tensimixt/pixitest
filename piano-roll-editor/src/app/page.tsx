@@ -7,7 +7,7 @@ const PIANO_WIDTH = 100
 const WHITE_KEY_HEIGHT = 20
 const BLACK_KEY_HEIGHT = 12
 const BLACK_KEY_OFFSET = 12
-const PIANO_PATTERN = [true, false, true, false, true, true, false, true, false, true, false, true] // Updated pattern for 12 semitones
+const PIANO_PATTERN = [false, true, false, true, false, false, true, false, true, false, true, false] // Black keys positions in an octave
 
 export default function Home() {
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -16,54 +16,59 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === 'undefined' || !canvasRef.current || appRef.current) return
 
-    const pixiApp = new PIXI.Application({
-      background: '#2c2c2c',
-      resizeTo: canvasRef.current,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-    })
+    const setupPixi = async () => {
+      // Create the PixiJS Application
+      const pixiApp = new PIXI.Application()
+      await pixiApp.init({
+        background: '#2c2c2c',
+        resizeTo: canvasRef.current,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+      })
 
-    appRef.current = pixiApp
-    canvasRef.current.appendChild(pixiApp.view as HTMLCanvasElement)
+      appRef.current = pixiApp
+      canvasRef.current.appendChild(pixiApp.canvas as HTMLCanvasElement)
 
-    // Create containers
-    const pianoContainer = new PIXI.Container()
-    const gridContainer = new PIXI.Container()
-    pixiApp.stage.addChild(pianoContainer)
-    pixiApp.stage.addChild(gridContainer)
+      // Create containers
+      const pianoContainer = new PIXI.Container()
+      const gridContainer = new PIXI.Container()
+      pixiApp.stage.addChild(pianoContainer)
+      pixiApp.stage.addChild(gridContainer)
 
-    // Draw piano keys
-    const drawPianoKeys = () => {
-      pianoContainer.removeChildren()
+      // Draw piano keys
+      const drawPianoKeys = () => {
+        pianoContainer.removeChildren()
 
-      const numWhiteKeys = Math.ceil(pixiApp.screen.height / WHITE_KEY_HEIGHT)
-      const numOctaves = Math.ceil(numWhiteKeys / 7)
+        const numWhiteKeys = Math.ceil(pixiApp.screen.height / WHITE_KEY_HEIGHT)
+        const numOctaves = Math.ceil(numWhiteKeys / 7)
 
-      // White keys
-      for (let octave = 0; octave < numOctaves; octave++) {
-        for (let i = 0; i < 7; i++) {
-          const keyYPos = (octave * 7 + i) * WHITE_KEY_HEIGHT
-          if (keyYPos >= pixiApp.screen.height) break // Stop if exceeding screen height
+        // White keys
+        for (let octave = 0; octave < numOctaves; octave++) {
+          for (let i = 0; i < 7; i++) {
+            const keyYPos = (octave * 7 + i) * WHITE_KEY_HEIGHT
+            if (keyYPos >= pixiApp.screen.height) break // Stop if exceeding screen height
 
-          const key = new PIXI.Graphics()
-          key.beginFill(0xffffff)
-          key.lineStyle(1, 0x000000)
-          key.drawRect(
-            0,
-            keyYPos,
-            PIANO_WIDTH,
-            WHITE_KEY_HEIGHT
-          )
-          key.endFill()
-          pianoContainer.addChild(key)
+            const key = new PIXI.Graphics()
+            key.beginFill(0xffffff)
+            key.lineStyle(1, 0x000000)
+            key.drawRect(
+              0,
+              keyYPos,
+              PIANO_WIDTH,
+              WHITE_KEY_HEIGHT
+            )
+            key.endFill()
+            pianoContainer.addChild(key)
+          }
         }
-      }
 
-      // Black keys
-      for (let octave = 0; octave < numOctaves; octave++) {
-        for (let i = 0; i < 12; i++) { // Loop over 12 semitones
-          if (PIANO_PATTERN[i % 12]) {
-            const keyYPos = (octave * 7 + Math.floor(i / 2)) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET
+        // Black keys
+        const blackKeysInOctave = [0, 1, 3, 4, 5] // Positions of black keys relative to white keys in an octave
+        for (let octave = 0; octave < numOctaves; octave++) {
+          for (let i = 0; i < blackKeysInOctave.length; i++) {
+            const keyIndex = blackKeysInOctave[i]
+            const keyYPos = (octave * 7 + keyIndex) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET
+
             if (keyYPos >= pixiApp.screen.height) break // Stop if exceeding screen height
 
             const key = new PIXI.Graphics()
@@ -79,48 +84,55 @@ export default function Home() {
           }
         }
       }
-    }
 
-    // Draw grid
-    const drawGrid = () => {
-      gridContainer.removeChildren()
+      // Draw grid
+      const drawGrid = () => {
+        gridContainer.removeChildren()
 
-      const grid = new PIXI.Graphics()
-      grid.lineStyle(1, 0x3f3f3f)
+        const grid = new PIXI.Graphics()
+        grid.lineStyle(1, 0x3f3f3f)
+        
+        // Vertical lines
+        for (let x = PIANO_WIDTH; x < pixiApp.screen.width; x += 50) {
+          grid.moveTo(x, 0)
+          grid.lineTo(x, pixiApp.screen.height)
+        }
+
+        // Horizontal lines
+        for (let y = 0; y < pixiApp.screen.height; y += WHITE_KEY_HEIGHT) {
+          grid.moveTo(PIANO_WIDTH, y)
+          grid.lineTo(pixiApp.screen.width, y)
+        }
+
+        gridContainer.addChild(grid)
+      }
+
+      // Handle resize
+      const handleResize = () => {
+        if (canvasRef.current && appRef.current) {
+          // Update the resizeTo property
+          appRef.current.resizeTo = canvasRef.current;
+          
+          // Resize the renderer
+          appRef.current.renderer.resize(
+            canvasRef.current.clientWidth,
+            canvasRef.current.clientHeight
+          )
+
+          // Redraw grid and piano keys when resizing
+          drawGrid()
+          drawPianoKeys()
+        }
+      }
+
+      window.addEventListener('resize', handleResize)
       
-      // Vertical lines
-      for (let x = PIANO_WIDTH; x < pixiApp.screen.width; x += 50) {
-        grid.moveTo(x, 0)
-        grid.lineTo(x, pixiApp.screen.height)
-      }
-
-      // Horizontal lines
-      for (let y = 0; y < pixiApp.screen.height; y += WHITE_KEY_HEIGHT) {
-        grid.moveTo(PIANO_WIDTH, y)
-        grid.lineTo(pixiApp.screen.width, y)
-      }
-
-      gridContainer.addChild(grid)
+      // Initial draw
+      drawPianoKeys()
+      drawGrid()
     }
 
-    // Handle resize
-    const handleResize = () => {
-      if (canvasRef.current && appRef.current) {
-        appRef.current.renderer.resize(
-          canvasRef.current.clientWidth,
-          canvasRef.current.clientHeight
-        )
-        // Redraw grid and piano keys when resizing
-        drawGrid()
-        drawPianoKeys()
-      }
-    }
-
-    window.addEventListener('resize', handleResize)
-    
-    // Initial draw
-    drawPianoKeys()
-    drawGrid()
+    setupPixi()
 
     // Cleanup
     return () => {
