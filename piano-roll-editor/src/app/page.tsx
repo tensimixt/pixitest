@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useRef } from 'react'
@@ -34,6 +35,7 @@ export default function Home() {
           if (keyYPos >= appRef.current.screen.height) break // Stop if exceeding screen height
 
           const key = new PIXI.Graphics()
+          // Set fill style and draw rectangle
           key.beginFill(0xffffff)
           key.lineStyle(1, 0x000000)
           key.drawRect(
@@ -43,6 +45,7 @@ export default function Home() {
             WHITE_KEY_HEIGHT
           )
           key.endFill()
+
           pianoContainer.addChild(key)
         }
       }
@@ -57,6 +60,7 @@ export default function Home() {
           if (keyYPos >= appRef.current.screen.height) break // Stop if exceeding screen height
 
           const key = new PIXI.Graphics()
+          // Set fill style and draw rectangle
           key.beginFill(0x000000)
           key.drawRect(
             0,
@@ -65,6 +69,7 @@ export default function Home() {
             BLACK_KEY_HEIGHT
           )
           key.endFill()
+
           pianoContainer.addChild(key)
         }
       }
