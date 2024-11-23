@@ -1,58 +1,52 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import * as PIXI from 'pixi.js'
 
 export default function Home() {
   const canvasRef = useRef<HTMLDivElement>(null)
+  const [isMounted, setIsMounted] = useState(false)
   
   useEffect(() => {
-    if (!canvasRef.current) return
-
-    // Initialize PIXI Application
-    const app = new PIXI.Application({
-      width: 800,
-      height: 600,
-      backgroundColor: 0x2c2c2c,
-      antialias: true,
-    })
-
-    // Add the canvas to our container
-    canvasRef.current.appendChild(app.view as HTMLCanvasElement)
-
-    // Create container for notes
-    const notesContainer = new PIXI.Container()
-    app.stage.addChild(notesContainer)
-
-    // Constants
-    const PIXELS_PER_QUARTER = 100
-    const NOTE_HEIGHT = 20
-
-    // Example note rendering
-    const renderNote = (position: number, duration: number, tone: number) => {
-      const note = new PIXI.Graphics()
-      note.beginFill(0x4A90E2)
-      note.drawRoundedRect(
-        position * (PIXELS_PER_QUARTER / 480),
-        (127 - tone) * NOTE_HEIGHT,
-        duration * (PIXELS_PER_QUARTER / 480),
-        NOTE_HEIGHT,
-        4
-      )
-      note.endFill()
-      notesContainer.addChild(note)
-    }
-
-    // Example: Render some test notes
-    renderNote(0, 480, 60)    // Middle C, quarter note
-    renderNote(480, 960, 64)  // E4, half note
-    renderNote(1440, 480, 67) // G4, quarter note
-
-    // Cleanup on unmount
-    return () => {
-      app.destroy(true)
-    }
+    setIsMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (!isMounted || !canvasRef.current) return
+
+    // Only initialize PIXI after component is mounted
+    let app: PIXI.Application | null = null
+    
+    try {
+      app = new PIXI.Application({
+        width: 800,
+        height: 600,
+        backgroundColor: 0x2c2c2c,
+        antialias: true,
+      })
+
+      canvasRef.current.appendChild(app.view as HTMLCanvasElement)
+
+      const notesContainer = new PIXI.Container()
+      app.stage.addChild(notesContainer)
+
+      // Rest of your PIXI initialization code...
+    } catch (error) {
+      console.error('PIXI initialization error:', error)
+    }
+
+    // Cleanup
+    return () => {
+      if (app) {
+        app.destroy(true)
+      }
+    }
+  }, [isMounted]) // Add isMounted as dependency
+
+  if (!isMounted) {
+    return null // or a loading state
+  }
 
   return (
     <main className="min-h-screen p-4">
