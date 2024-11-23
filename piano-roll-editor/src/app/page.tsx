@@ -53,13 +53,13 @@ export default function Home() {
     gridAppRef.current = gridApp
     gridContainerRef.current.appendChild(gridApp.view as HTMLCanvasElement)
 
-    // Helper function to determine if a key is black
+    // **Helper function to determine if a key is black**
     const isBlackKey = (keyNumber: number): boolean => {
       const octavePosition = keyNumber % 12
       return [1, 3, 6, 8, 10].includes(octavePosition)
     }
 
-    // Helper function to get the key name
+    // **Helper function to get the key name**
     const getKeyName = (keyNumber: number): string => {
       const octave = Math.floor(keyNumber / 12) - 1
       const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
@@ -67,7 +67,7 @@ export default function Home() {
       return `${noteNames[noteIndex]}${octave}`
     }
 
-    // Draw piano keys in pianoApp
+    // **Draw piano keys in pianoApp**
     const drawPianoKeys = () => {
       const pianoStage = pianoApp.stage
       pianoStage.removeChildren()
@@ -88,7 +88,7 @@ export default function Home() {
           // Create text for the key name
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
-            fontSize: 12,
+            fontSize: 8, // Reduced font size
             fill: 0x000000, // Black color for text on white keys
             align: 'center',
           })
@@ -128,7 +128,7 @@ export default function Home() {
           // Create text for the key name
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
-            fontSize: 12,
+            fontSize: 8, // Reduced font size
             fill: 0xffffff, // White color for text on black keys
             align: 'center',
           })
@@ -144,7 +144,7 @@ export default function Home() {
       }
     }
 
-    // Draw grid in gridApp
+    // **Draw grid in gridApp**
     const drawGrid = () => {
       const gridStage = gridApp.stage
       gridStage.removeChildren()
@@ -171,11 +171,7 @@ export default function Home() {
       gridStage.addChild(grid)
     }
 
-    // Initial draw
-    drawPianoKeys()
-    drawGrid()
-
-    // Handle resize
+    // **Handle resize**
     const handleResize = () => {
       if (!gridContainerRef.current || !gridAppRef.current) return
 
@@ -189,20 +185,32 @@ export default function Home() {
       drawGrid()
     }
 
+    // **Initial draw**
+    drawPianoKeys()
+    drawGrid()
+
+    // **Handle resize event**
     window.addEventListener('resize', handleResize)
 
-    // Synchronize vertical scrolling
-    const onScroll = () => {
+    // Synchronize vertical scrolling between piano and grid containers
+    const syncScroll = () => {
       if (!pianoContainerRef.current || !gridContainerRef.current) return
       pianoContainerRef.current.scrollTop = gridContainerRef.current.scrollTop
     }
 
-    gridContainerRef.current.addEventListener('scroll', onScroll)
+    const syncScrollReverse = () => {
+      if (!pianoContainerRef.current || !gridContainerRef.current) return
+      gridContainerRef.current.scrollTop = pianoContainerRef.current.scrollTop
+    }
 
-    // Cleanup
+    gridContainerRef.current.addEventListener('scroll', syncScroll)
+    pianoContainerRef.current.addEventListener('scroll', syncScrollReverse)
+
+    // **Cleanup**
     return () => {
       window.removeEventListener('resize', handleResize)
-      gridContainerRef.current?.removeEventListener('scroll', onScroll)
+      gridContainerRef.current?.removeEventListener('scroll', syncScroll)
+      pianoContainerRef.current?.removeEventListener('scroll', syncScrollReverse)
       if (pianoAppRef.current) {
         pianoAppRef.current.destroy(true)
         pianoAppRef.current = null
@@ -227,17 +235,18 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <div 
+      <div
         className="w-full h-[600px] bg-gray-800 rounded-lg overflow-hidden flex"
       >
         <div
           ref={pianoContainerRef}
-          className="overflow-hidden"
-          style={{ width: `${PIANO_WIDTH}px` }}
+          className="overflow-y-auto"
+          style={{ width: `${PIANO_WIDTH}px`, maxHeight: '600px' }}
         />
         <div
           ref={gridContainerRef}
           className="flex-1 overflow-auto"
+          style={{ maxHeight: '600px' }}
         />
       </div>
     </main>
