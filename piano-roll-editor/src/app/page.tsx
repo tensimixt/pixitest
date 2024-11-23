@@ -1,7 +1,10 @@
+
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as PIXI from 'pixi.js'
+import yaml from 'js-yaml'
+import { UstxData, Note } from '../types/ustx'
 
 const PIANO_WIDTH = 130 // Width of the piano container
 const KEY_WIDTH = 110   // Width of the keys
@@ -17,6 +20,9 @@ export default function Home() {
   const pianoAppRef = useRef<PIXI.Application | null>(null)
   const gridAppRef = useRef<PIXI.Application | null>(null)
 
+  const [ustxData, setUstxData] = useState<UstxData | null>(null)
+  const [notes, setNotes] = useState<Note[]>([])
+
   useEffect(() => {
     if (
       typeof window === 'undefined' ||
@@ -27,21 +33,21 @@ export default function Home() {
     )
       return
 
-    // **Helper function to determine if a key is black**
+    // Helper function to determine if a key is black
     const isBlackKey = (keyNumber: number): boolean => {
       const noteIndex = keyNumber % 12
       return [1, 3, 6, 8, 10].includes(noteIndex)
     }
 
-    // **Helper function to get the key name**
+    // Helper function to get the key name
     const getKeyName = (keyNumber: number): string => {
-      const octave = Math.floor(keyNumber / 12) // Adjusted octave calculation
+      const octave = Math.floor(keyNumber / 12) - 1 // Adjusted octave calculation
       const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
       const noteIndex = keyNumber % 12
       return `${noteNames[noteIndex]}${octave}`
     }
 
-    // **Calculate the total number of white keys**
+    // Calculate the total number of white keys
     const totalWhiteKeys = (() => {
       let count = 0
       for (let i = 0; i < TOTAL_KEYS; i++) {
@@ -52,7 +58,7 @@ export default function Home() {
       return count
     })()
 
-    // **Calculate the total height needed for all the white keys**
+    // Calculate the total height needed for all the white keys
     const totalHeight = totalWhiteKeys * WHITE_KEY_HEIGHT
 
     // Create the PIXI Application for the piano keys
@@ -66,7 +72,7 @@ export default function Home() {
 
     pianoAppRef.current = pianoApp
 
-    // **Center the canvas inside the piano container**
+    // Center the canvas inside the piano container
     const pianoCanvas = pianoApp.view as HTMLCanvasElement
     pianoCanvas.style.display = 'block'
     pianoCanvas.style.margin = '0 auto'
@@ -85,7 +91,7 @@ export default function Home() {
     gridAppRef.current = gridApp
     gridContainerRef.current.appendChild(gridApp.view as HTMLCanvasElement)
 
-    // **Draw piano keys in pianoApp**
+    // Draw piano keys in pianoApp
     const drawPianoKeys = () => {
       const pianoStage = pianoApp.stage
       pianoStage.removeChildren()
@@ -103,14 +109,14 @@ export default function Home() {
           key.drawRect(KEY_X_OFFSET, whiteKeyY, KEY_WIDTH, WHITE_KEY_HEIGHT)
           key.endFill()
 
-          // **Create text for the key name**
+          // Create text for the key name
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
             fontSize: 8, // Reduced font size
             fill: 0x000000, // Black color for text on white keys
             align: 'left',
           })
-          // **Align the text to the left**
+          // Align the text to the left
           keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
           keyText.x = KEY_X_OFFSET + 5 // Move text 5 pixels from the left edge of the key
           keyText.y = whiteKeyY + WHITE_KEY_HEIGHT / 2
@@ -143,14 +149,14 @@ export default function Home() {
           )
           key.endFill()
 
-          // **Create text for the key name**
+          // Create text for the key name
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
             fontSize: 8, // Reduced font size
             fill: 0xffffff, // White color for text on black keys
             align: 'left',
           })
-          // **Align the text to the left**
+          // Align the text to the left
           keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
           keyText.x = KEY_X_OFFSET + BLACK_KEY_OFFSET / 2 + 5 // Adjusted x position
           keyText.y =
@@ -166,7 +172,7 @@ export default function Home() {
       }
     }
 
-    // **Draw grid in gridApp**
+    // Draw grid in gridApp
     const drawGrid = () => {
       const gridStage = gridApp.stage
       gridStage.removeChildren()
@@ -193,25 +199,90 @@ export default function Home() {
       gridStage.addChild(grid)
     }
 
-    // **Handle resize**
+    // Draw notes
+    const drawNotes = (notes: Note[]) => {
+      if (!ustxData) return
+
+      const gridStage = gridApp.stage
+
+      // Remove existing notes
+      const existingNotes = gridStage.getChildByName('notesContainer')
+      if (existingNotes) {
+        gridStage.removeChild(existingNotes)
+      }
+
+      const notesContainer = new PIXI.Container()
+      notesContainer.name = 'notesContainer'
+
+      const TICKS_PER_BEAT = ustxData.resolution || 480 // Default to 480 if not specified
+      const BEATS_PER_MEASURE = ustxData.beat_per_bar || 4
+      const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
+      const NOTE_HEIGHT = WHITE_KEY_HEIGHT // Height of one semitone, matching the key height
+
+      notes.forEach((note) => {
+        const { position, duration, tone, lyric } = note
+
+        // Calculate the x position (time axis)
+        const startBeat = position / TICKS_PER_BEAT
+        const x = startBeat * GRID_UNIT_WIDTH
+
+        const noteNumber = tone
+        const keyIndex = TOTAL_KEYS - noteNumber - 1 // Reverse the key index to match the piano orientation
+
+        // Calculate the y position (pitch axis)
+        const y = keyIndex * NOTE_HEIGHT
+
+        // Calculate the width (duration)
+        const durationBeats = duration / TICKS_PER_BEAT
+        const width = durationBeats * GRID_UNIT_WIDTH
+
+        // Draw the note rectangle
+        const noteGraphics = new PIXI.Graphics()
+        noteGraphics.beginFill(0xffd700)
+        noteGraphics.lineStyle(1, 0x000000)
+        noteGraphics.drawRect(x, y, width, NOTE_HEIGHT)
+        noteGraphics.endFill()
+
+        // Add the lyric text
+        const lyricText = new PIXI.Text(lyric, {
+          fontFamily: 'Arial',
+          fontSize: 12,
+          fill: 0x000000,
+          align: 'center',
+        })
+        lyricText.anchor.set(0.5, 0.5)
+        lyricText.x = x + width / 2
+        lyricText.y = y + NOTE_HEIGHT / 2
+
+        notesContainer.addChild(noteGraphics)
+        notesContainer.addChild(lyricText)
+      })
+
+      gridStage.addChild(notesContainer)
+    }
+
+    // Handle resize
     const handleResize = () => {
       if (!gridContainerRef.current || !gridAppRef.current) return
 
       // Resize grid app
       gridApp.renderer.resize(
         gridContainerRef.current.clientWidth,
-        totalHeight
+        gridApp.screen.height
       )
 
-      // Redraw grid
+      // Redraw grid and notes
       drawGrid()
+      if (notes.length > 0) {
+        drawNotes(notes)
+      }
     }
 
-    // **Initial draw**
+    // Initial draw
     drawPianoKeys()
     drawGrid()
 
-    // **Handle resize event**
+    // Handle resize event
     window.addEventListener('resize', handleResize)
 
     // Synchronize vertical scrolling between piano and grid containers
@@ -228,7 +299,7 @@ export default function Home() {
     gridContainerRef.current.addEventListener('scroll', syncScroll)
     pianoContainerRef.current.addEventListener('scroll', syncScrollReverse)
 
-    // **Cleanup**
+    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize)
       gridContainerRef.current?.removeEventListener('scroll', syncScroll)
@@ -242,16 +313,47 @@ export default function Home() {
         gridAppRef.current = null
       }
     }
-  }, [])
+  }, [ustxData, notes])
+
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const contents = e.target?.result as string
+        try {
+          const data = yaml.load(contents) as UstxData
+          setUstxData(data)
+          const extractedNotes = data.voice_parts[0].notes
+          setNotes(extractedNotes)
+        } catch (error) {
+          console.error('Error parsing USTX file:', error)
+        }
+      }
+      reader.readAsText(file)
+    }
+  }
 
   return (
     <main className="min-h-screen p-4 bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Piano Roll Editor</h1>
         <div className="space-x-2">
-          <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+          {/* File upload input */}
+          <input
+            type="file"
+            accept=".ustx,.yaml,.yml"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="file-upload"
+          />
+          <label
+            htmlFor="file-upload"
+            className="cursor-pointer px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
             Load USTX
-          </button>
+          </label>
           <button className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors">
             Play
           </button>
