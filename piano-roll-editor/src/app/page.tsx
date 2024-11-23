@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -11,6 +10,9 @@ const KEY_WIDTH = 110   // Width of the keys
 const KEY_X_OFFSET = (PIANO_WIDTH - KEY_WIDTH) / 2 // Offset to center the keys
 const KEY_HEIGHT = 12 // Reduced key height to fit more notes vertically
 const TOTAL_KEYS = 128 // From MIDI note 0 to 127
+
+// ** Define totalHeight at the top level **
+const totalHeight = TOTAL_KEYS * KEY_HEIGHT
 
 export default function Home() {
   const pianoContainerRef = useRef<HTMLDivElement>(null)
@@ -200,9 +202,6 @@ export default function Home() {
     )
       return
 
-    // Calculate the total height needed for all the keys
-    const totalHeight = TOTAL_KEYS * KEY_HEIGHT
-
     // Create the PIXI Application for the piano keys
     const pianoApp = new PIXI.Application({
       backgroundColor: 0x2c2c2c,
@@ -285,8 +284,8 @@ export default function Home() {
 
     const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
 
-    // Resize grid app
-    gridApp.renderer.resize(newWidth, gridApp.screen.height)
+    // Resize grid app with consistent height
+    gridApp.renderer.resize(newWidth, totalHeight)
 
     // Redraw grid and notes
     drawGrid(newWidth)
@@ -310,7 +309,8 @@ export default function Home() {
 
     const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
 
-    gridApp.renderer.resize(newWidth, gridApp.screen.height)
+    // Resize grid app with consistent height
+    gridApp.renderer.resize(newWidth, totalHeight)
 
     drawGrid(newWidth)
     if (notes.length > 0) {
