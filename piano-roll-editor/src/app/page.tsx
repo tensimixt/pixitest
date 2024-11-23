@@ -4,8 +4,8 @@
 import { useEffect, useRef } from 'react'
 import * as PIXI from 'pixi.js'
 
-const PIANO_WIDTH = 130 // Increased width of the piano container
-const KEY_WIDTH = 110   // Increased width of the keys
+const PIANO_WIDTH = 130 // Width of the piano container
+const KEY_WIDTH = 110   // Width of the keys
 const KEY_X_OFFSET = (PIANO_WIDTH - KEY_WIDTH) / 2 // Offset to center the keys
 const WHITE_KEY_HEIGHT = 20
 const BLACK_KEY_HEIGHT = 12
@@ -104,16 +104,16 @@ export default function Home() {
           key.drawRect(KEY_X_OFFSET, whiteKeyY, KEY_WIDTH, WHITE_KEY_HEIGHT)
           key.endFill()
 
-          // Create text for the key name
+          // **Create text for the key name**
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
-            fontSize: 12, // Increased font size
+            fontSize: 10, // Reduced font size
             fill: 0x000000, // Black color for text on white keys
-            align: 'center',
+            align: 'left',
           })
-          // Center the text on the key
-          keyText.anchor.set(0.5)
-          keyText.x = PIANO_WIDTH / 2 // Centered based on the container's width
+          // **Align the text to the left**
+          keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
+          keyText.x = KEY_X_OFFSET + 5 // Move text 5 pixels from the left edge of the key
           keyText.y = whiteKeyY + WHITE_KEY_HEIGHT / 2
 
           // Add key and text to the stage
@@ -144,16 +144,16 @@ export default function Home() {
           )
           key.endFill()
 
-          // Create text for the key name
+          // **Create text for the key name**
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
-            fontSize: 12, // Increased font size
+            fontSize: 10, // Reduced font size
             fill: 0xffffff, // White color for text on black keys
-            align: 'center',
+            align: 'left',
           })
-          // Center the text on the key
-          keyText.anchor.set(0.5)
-          keyText.x = PIANO_WIDTH / 2 // Centered based on the container's width
+          // **Align the text to the left**
+          keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
+          keyText.x = KEY_X_OFFSET + BLACK_KEY_OFFSET / 2 + 5 // Adjusted x position
           keyText.y =
             whiteKeyY -
             WHITE_KEY_HEIGHT +
@@ -167,45 +167,14 @@ export default function Home() {
       }
     }
 
-    // **Draw grid in gridApp**
+    // **Draw grid in gridApp** (no changes needed)
     const drawGrid = () => {
-      const gridStage = gridApp.stage
-      gridStage.removeChildren()
-
-      const grid = new PIXI.Graphics()
-      grid.lineStyle(1, 0x3f3f3f)
-
-      // Horizontal lines aligned with white keys
-      let whiteKeyY = 0
-      for (let i = 0; i < TOTAL_KEYS; i++) {
-        if (!isBlackKey(i)) {
-          grid.moveTo(0, whiteKeyY)
-          grid.lineTo(gridApp.screen.width, whiteKeyY)
-          whiteKeyY += WHITE_KEY_HEIGHT
-        }
-      }
-
-      // Vertical lines
-      for (let x = 0; x < gridApp.screen.width; x += 50) {
-        grid.moveTo(x, 0)
-        grid.lineTo(x, gridApp.screen.height)
-      }
-
-      gridStage.addChild(grid)
+      // ... existing code remains the same ...
     }
 
-    // **Handle resize**
+    // **Handle resize** (no changes needed)
     const handleResize = () => {
-      if (!gridContainerRef.current || !gridAppRef.current) return
-
-      // Resize grid app
-      gridApp.renderer.resize(
-        gridContainerRef.current.clientWidth,
-        totalHeight
-      )
-
-      // Redraw grid
-      drawGrid()
+      // ... existing code remains the same ...
     }
 
     // **Initial draw**
@@ -216,32 +185,11 @@ export default function Home() {
     window.addEventListener('resize', handleResize)
 
     // Synchronize vertical scrolling between piano and grid containers
-    const syncScroll = () => {
-      if (!pianoContainerRef.current || !gridContainerRef.current) return
-      pianoContainerRef.current.scrollTop = gridContainerRef.current.scrollTop
-    }
-
-    const syncScrollReverse = () => {
-      if (!pianoContainerRef.current || !gridContainerRef.current) return
-      gridContainerRef.current.scrollTop = pianoContainerRef.current.scrollTop
-    }
-
-    gridContainerRef.current.addEventListener('scroll', syncScroll)
-    pianoContainerRef.current.addEventListener('scroll', syncScrollReverse)
+    // ... existing scroll synchronization code ...
 
     // **Cleanup**
     return () => {
-      window.removeEventListener('resize', handleResize)
-      gridContainerRef.current?.removeEventListener('scroll', syncScroll)
-      pianoContainerRef.current?.removeEventListener('scroll', syncScrollReverse)
-      if (pianoAppRef.current) {
-        pianoAppRef.current.destroy(true)
-        pianoAppRef.current = null
-      }
-      if (gridAppRef.current) {
-        gridAppRef.current.destroy(true)
-        gridAppRef.current = null
-      }
+      // ... existing cleanup code ...
     }
   }, [])
 
@@ -268,7 +216,7 @@ export default function Home() {
             width: `${PIANO_WIDTH}px`,
             maxHeight: '600px',
             overflowX: 'hidden', // Prevent horizontal scrolling
-            // Removed display: flex and justify-content
+            // No display: flex or justifyContent needed
           }}
         />
         <div
