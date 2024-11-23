@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useRef } from 'react'
@@ -35,9 +34,10 @@ export default function Home() {
           if (keyYPos >= appRef.current.screen.height) break // Stop if exceeding screen height
 
           const key = new PIXI.Graphics()
-          // Set fill style and draw rectangle
+          // Set fill and line style
           key.beginFill(0xffffff)
           key.lineStyle(1, 0x000000)
+          // Draw rectangle
           key.drawRect(
             0,
             keyYPos,
@@ -60,8 +60,9 @@ export default function Home() {
           if (keyYPos >= appRef.current.screen.height) break // Stop if exceeding screen height
 
           const key = new PIXI.Graphics()
-          // Set fill style and draw rectangle
+          // Set fill style
           key.beginFill(0x000000)
+          // Draw rectangle
           key.drawRect(
             0,
             keyYPos,
@@ -103,9 +104,6 @@ export default function Home() {
       if (!canvasRef.current || !appRef.current) return
 
       // Update the resizeTo property
-      appRef.current.resizeTo = canvasRef.current
-      
-      // Resize the renderer
       appRef.current.renderer.resize(
         canvasRef.current.clientWidth,
         canvasRef.current.clientHeight
@@ -116,32 +114,29 @@ export default function Home() {
       drawPianoKeys()
     }
 
-    const setupPixi = async () => {
-      // Create the PixiJS Application
-      const pixiApp = new PIXI.Application()
-      await pixiApp.init({
-        background: '#2c2c2c',
-        resizeTo: canvasRef.current!, // Assert non-null
-        antialias: true,
-        resolution: window.devicePixelRatio || 1,
-      })
+    // Create the PixiJS Application with options
+    const pixiApp = new PIXI.Application({
+      backgroundColor: 0x2c2c2c,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      width: canvasRef.current.clientWidth,
+      height: canvasRef.current.clientHeight,
+    })
 
-      appRef.current = pixiApp
-      canvasRef.current!.appendChild(pixiApp.canvas as HTMLCanvasElement)
+    appRef.current = pixiApp
+    canvasRef.current!.appendChild(pixiApp.view as HTMLCanvasElement)
 
-      // Add containers to the stage
-      pixiApp.stage.addChild(pianoContainer)
-      pixiApp.stage.addChild(gridContainer)
+    // Add containers to the stage
+    pixiApp.stage.addChild(pianoContainer)
+    pixiApp.stage.addChild(gridContainer)
 
-      // Initial draw
-      drawPianoKeys()
-      drawGrid()
-    }
+    // Initial draw
+    drawPianoKeys()
+    drawGrid()
 
-    setupPixi()
-
+    // Add resize event listener
     window.addEventListener('resize', handleResize)
-    
+
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize)
