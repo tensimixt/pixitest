@@ -7,70 +7,75 @@ const PIANO_WIDTH = 100
 const WHITE_KEY_HEIGHT = 20
 const BLACK_KEY_HEIGHT = 12
 const BLACK_KEY_OFFSET = 12
+const TOTAL_KEYS = 88 // Standard piano has 88 keys
 
 export default function Home() {
-  const canvasRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<PIXI.Application | null>(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !canvasRef.current || appRef.current) return
+    if (typeof window === 'undefined' || !containerRef.current || appRef.current) return
 
-    // Initialize containers outside of setupPixi so they are accessible
+    // **Calculate the total height needed for all the keys**
+    const totalWhiteKeys = TOTAL_KEYS - Math.floor((TOTAL_KEYS / 12) * 5)
+    const totalHeight = totalWhiteKeys * WHITE_KEY_HEIGHT
+
+    // Create the PixiJS Application with the total height
+    const pixiApp = new PIXI.Application({
+      backgroundColor: 0x2c2c2c,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      width: containerRef.current.clientWidth,
+      height: totalHeight, // Set the canvas height to fit all keys
+    })
+
+    appRef.current = pixiApp
+    containerRef.current.appendChild(pixiApp.view as HTMLCanvasElement)
+
+    // Create containers
     const pianoContainer = new PIXI.Container()
     const gridContainer = new PIXI.Container()
+    pixiApp.stage.addChild(pianoContainer)
+    pixiApp.stage.addChild(gridContainer)
 
     // Draw piano keys
     const drawPianoKeys = () => {
-      if (!appRef.current) return
       pianoContainer.removeChildren()
 
-      const numWhiteKeys = Math.ceil(appRef.current.screen.height / WHITE_KEY_HEIGHT)
-      const numOctaves = Math.ceil(numWhiteKeys / 7)
+      let whiteKeyY = 0
 
-      // White keys
-      for (let octave = 0; octave < numOctaves; octave++) {
-        for (let i = 0; i < 7; i++) {
-          const keyYPos = (octave * 7 + i) * WHITE_KEY_HEIGHT
-          if (keyYPos >= appRef.current.screen.height) break // Stop if exceeding screen height
-
+      for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
+        const isBlack = isBlackKey(i)
+        if (!isBlack) {
+          // White key
           const key = new PIXI.Graphics()
-          // Set fill and line style
           key.beginFill(0xffffff)
           key.lineStyle(1, 0x000000)
-          // Draw rectangle
-          key.drawRect(
-            0,
-            keyYPos,
-            PIANO_WIDTH,
-            WHITE_KEY_HEIGHT
-          )
+          key.drawRect(0, whiteKeyY, PIANO_WIDTH, WHITE_KEY_HEIGHT)
           key.endFill()
-
           pianoContainer.addChild(key)
+          whiteKeyY += WHITE_KEY_HEIGHT
         }
       }
 
-      // Black keys
-      const blackKeysInOctave = [0, 1, 3, 4, 5] // Positions of black keys relative to white keys in an octave
-      for (let octave = 0; octave < numOctaves; octave++) {
-        for (let i = 0; i < blackKeysInOctave.length; i++) {
-          const keyIndex = blackKeysInOctave[i]
-          const keyYPos = (octave * 7 + keyIndex) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET
+      // Reset Y position for black keys
+      whiteKeyY = 0
 
-          if (keyYPos >= appRef.current.screen.height) break // Stop if exceeding screen height
-
+      for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
+        const isBlack = isBlackKey(i)
+        if (!isBlack) {
+          whiteKeyY += WHITE_KEY_HEIGHT
+        } else {
+          // Black key
           const key = new PIXI.Graphics()
-          // Set fill style
           key.beginFill(0x000000)
-          // Draw rectangle
           key.drawRect(
             0,
-            keyYPos,
+            whiteKeyY - WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET,
             PIANO_WIDTH - BLACK_KEY_OFFSET,
             BLACK_KEY_HEIGHT
           )
           key.endFill()
-
           pianoContainer.addChild(key)
         }
       }
@@ -78,68 +83,42 @@ export default function Home() {
 
     // Draw grid
     const drawGrid = () => {
-      if (!appRef.current) return
       gridContainer.removeChildren()
 
       const grid = new PIXI.Graphics()
       grid.lineStyle(1, 0x3f3f3f)
       
       // Vertical lines
-      for (let x = PIANO_WIDTH; x < appRef.current.screen.width; x += 50) {
+      for (let x = PIANO_WIDTH; x < pixiApp.screen.width; x += 50) {
         grid.moveTo(x, 0)
-        grid.lineTo(x, appRef.current.screen.height)
+        grid.lineTo(x, pixiApp.screen.height)
       }
 
       // Horizontal lines
-      for (let y = 0; y < appRef.current.screen.height; y += WHITE_KEY_HEIGHT) {
-        grid.moveTo(PIANO_WIDTH, y)
-        grid.lineTo(appRef.current.screen.width, y)
+      let whiteKeyY = 0
+      for (let i = 0; i < TOTAL_KEYS; i++) {
+        if (!isBlackKey(i)) {
+          grid.moveTo(PIANO_WIDTH, whiteKeyY)
+          grid.lineTo(pixiApp.screen.width, whiteKeyY)
+          whiteKeyY += WHITE_KEY_HEIGHT
+        }
       }
 
       gridContainer.addChild(grid)
     }
 
-    // Handle resize
-    const handleResize = () => {
-      if (!canvasRef.current || !appRef.current) return
-
-      // Update the resizeTo property
-      appRef.current.renderer.resize(
-        canvasRef.current.clientWidth,
-        canvasRef.current.clientHeight
-      )
-
-      // Redraw grid and piano keys when resizing
-      drawGrid()
-      drawPianoKeys()
+    // Helper function to determine if a key is black
+    const isBlackKey = (keyNumber: number): boolean => {
+      const octavePosition = keyNumber % 12
+      return [1, 3, 6, 8, 10].includes(octavePosition)
     }
-
-    // Create the PixiJS Application with options
-    const pixiApp = new PIXI.Application({
-      backgroundColor: 0x2c2c2c,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      width: canvasRef.current.clientWidth,
-      height: canvasRef.current.clientHeight,
-    })
-
-    appRef.current = pixiApp
-    canvasRef.current!.appendChild(pixiApp.view as HTMLCanvasElement)
-
-    // Add containers to the stage
-    pixiApp.stage.addChild(pianoContainer)
-    pixiApp.stage.addChild(gridContainer)
 
     // Initial draw
     drawPianoKeys()
     drawGrid()
 
-    // Add resize event listener
-    window.addEventListener('resize', handleResize)
-
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize)
       if (appRef.current) {
         appRef.current.destroy(true)
         appRef.current = null
@@ -160,9 +139,9 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <div 
-        ref={canvasRef} 
-        className="w-full h-[600px] bg-gray-800 rounded-lg overflow-hidden"
+      <div
+        ref={containerRef}
+        className="w-full h-[600px] bg-gray-800 rounded-lg overflow-y-auto"
       />
     </main>
   )
