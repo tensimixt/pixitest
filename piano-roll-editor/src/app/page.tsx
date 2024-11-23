@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -8,10 +9,8 @@ import { UstxData, Note } from '../types/ustx'
 const PIANO_WIDTH = 130 // Width of the piano container
 const KEY_WIDTH = 110   // Width of the keys
 const KEY_X_OFFSET = (PIANO_WIDTH - KEY_WIDTH) / 2 // Offset to center the keys
-const WHITE_KEY_HEIGHT = 20
-const BLACK_KEY_HEIGHT = 12
-const BLACK_KEY_OFFSET = 12
-const TOTAL_KEYS = 108 // Keys from C0 to B8
+const KEY_HEIGHT = 20 // Equal height for all keys
+const TOTAL_KEYS = 128 // From MIDI note 0 to 127
 
 export default function Home() {
   const pianoContainerRef = useRef<HTMLDivElement>(null)
@@ -22,7 +21,7 @@ export default function Home() {
   const [ustxData, setUstxData] = useState<UstxData | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
 
-  // Helper functions moved outside of useEffect hooks
+  // Helper functions
   // -----------------------------------------------
 
   // Helper function to determine if a key is black
@@ -58,79 +57,35 @@ export default function Home() {
     const pianoStage = pianoApp.stage
     pianoStage.removeChildren()
 
-    let whiteKeyY = 0
+    let keyY = 0
 
     for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
-      const isBlack = isBlackKey(i)
+      const black = isBlackKey(i)
       const keyName = getKeyName(i)
-      if (!isBlack) {
-        // White key
-        const key = new PIXI.Graphics()
-        key.beginFill(0xffffff)
-        key.lineStyle(1, 0x000000)
-        key.drawRect(KEY_X_OFFSET, whiteKeyY, KEY_WIDTH, WHITE_KEY_HEIGHT)
-        key.endFill()
 
-        // Create text for the key name
-        const keyText = new PIXI.Text(keyName, {
-          fontFamily: 'Arial',
-          fontSize: 8, // Reduced font size
-          fill: 0x000000, // Black color for text on white keys
-          align: 'left',
-        })
-        // Align the text to the left
-        keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
-        keyText.x = KEY_X_OFFSET + 5 // Move text 5 pixels from the left edge of the key
-        keyText.y = whiteKeyY + WHITE_KEY_HEIGHT / 2
+      const key = new PIXI.Graphics()
+      key.beginFill(black ? 0x2c2c2c : 0xffffff)
+      key.lineStyle(1, 0x000000)
+      key.drawRect(KEY_X_OFFSET, keyY, KEY_WIDTH, KEY_HEIGHT)
+      key.endFill()
 
-        // Add key and text to the stage
-        pianoStage.addChild(key)
-        pianoStage.addChild(keyText)
+      // Create text for the key name
+      const keyText = new PIXI.Text(keyName, {
+        fontFamily: 'Arial',
+        fontSize: 8, // Reduced font size
+        fill: black ? 0xffffff : 0x000000, // White text on black keys, black text on white keys
+        align: 'left',
+      })
+      // Align the text to the left
+      keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
+      keyText.x = KEY_X_OFFSET + 5 // Move text 5 pixels from the left edge of the key
+      keyText.y = keyY + KEY_HEIGHT / 2
 
-        whiteKeyY += WHITE_KEY_HEIGHT
-      }
-    }
+      // Add key and text to the stage
+      pianoStage.addChild(key)
+      pianoStage.addChild(keyText)
 
-    // Reset Y position for black keys
-    whiteKeyY = 0
-
-    for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
-      const isBlack = isBlackKey(i)
-      const keyName = getKeyName(i)
-      if (!isBlack) {
-        whiteKeyY += WHITE_KEY_HEIGHT
-      } else {
-        // Black key
-        const key = new PIXI.Graphics()
-        key.beginFill(0x000000)
-        key.drawRect(
-          KEY_X_OFFSET + BLACK_KEY_OFFSET / 2,
-          whiteKeyY - WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET,
-          KEY_WIDTH - BLACK_KEY_OFFSET,
-          BLACK_KEY_HEIGHT
-        )
-        key.endFill()
-
-        // Create text for the key name
-        const keyText = new PIXI.Text(keyName, {
-          fontFamily: 'Arial',
-          fontSize: 8, // Reduced font size
-          fill: 0xffffff, // White color for text on black keys
-          align: 'left',
-        })
-        // Align the text to the left
-        keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
-        keyText.x = KEY_X_OFFSET + BLACK_KEY_OFFSET / 2 + 5 // Adjusted x position
-        keyText.y =
-          whiteKeyY -
-          WHITE_KEY_HEIGHT +
-          BLACK_KEY_OFFSET +
-          BLACK_KEY_HEIGHT / 2
-
-        // Add key and text to the stage
-        pianoStage.addChild(key)
-        pianoStage.addChild(keyText)
-      }
+      keyY += KEY_HEIGHT
     }
   }
 
@@ -144,20 +99,29 @@ export default function Home() {
     const grid = new PIXI.Graphics()
     grid.lineStyle(1, 0x3f3f3f)
 
-    // Horizontal lines aligned with white keys
-    let whiteKeyY = 0
+    // Horizontal lines for each key
+    let keyY = 0
     for (let i = 0; i < TOTAL_KEYS; i++) {
-      if (!isBlackKey(i)) {
-        grid.moveTo(0, whiteKeyY)
-        grid.lineTo(gridWidth, whiteKeyY)
-        whiteKeyY += WHITE_KEY_HEIGHT
-      }
+      grid.moveTo(0, keyY)
+      grid.lineTo(gridWidth, keyY)
+      keyY += KEY_HEIGHT
     }
 
     // Vertical lines
     for (let x = 0; x < gridWidth; x += 50) {
       grid.moveTo(x, 0)
       grid.lineTo(x, gridApp.screen.height)
+    }
+
+    // Background shading for black keys
+    keyY = 0
+    for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
+      if (isBlackKey(i)) {
+        grid.beginFill(0x262626)
+        grid.drawRect(0, keyY, gridWidth, KEY_HEIGHT)
+        grid.endFill()
+      }
+      keyY += KEY_HEIGHT
     }
 
     gridStage.addChild(grid)
@@ -179,9 +143,8 @@ export default function Home() {
     notesContainer.name = 'notesContainer'
 
     const TICKS_PER_BEAT = ustxData.resolution || 480
-    // const BEATS_PER_MEASURE = ustxData.beat_per_bar || 4
     const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
-    const NOTE_HEIGHT = WHITE_KEY_HEIGHT // Height of one semitone, matching the key height
+    const NOTE_HEIGHT = KEY_HEIGHT // Height of one semitone, matching the key height
 
     notes.forEach((note) => {
       const { position, duration, tone, lyric } = note
@@ -237,19 +200,8 @@ export default function Home() {
     )
       return
 
-    // Calculate the total number of white keys
-    const totalWhiteKeys = (() => {
-      let count = 0
-      for (let i = 0; i < TOTAL_KEYS; i++) {
-        if (!isBlackKey(i)) {
-          count++
-        }
-      }
-      return count
-    })()
-
-    // Calculate the total height needed for all the white keys
-    const totalHeight = totalWhiteKeys * WHITE_KEY_HEIGHT
+    // Calculate the total height needed for all the keys
+    const totalHeight = TOTAL_KEYS * KEY_HEIGHT
 
     // Create the PIXI Application for the piano keys
     const pianoApp = new PIXI.Application({
