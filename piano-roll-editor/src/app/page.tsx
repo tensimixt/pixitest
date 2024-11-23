@@ -11,7 +11,6 @@ const KEY_X_OFFSET = (PIANO_WIDTH - KEY_WIDTH) / 2 // Offset to center the keys
 const KEY_HEIGHT = 12 // Reduced key height to fit more notes vertically
 const TOTAL_KEYS = 128 // From MIDI note 0 to 127
 
-// ** Define totalHeight at the top level **
 const totalHeight = TOTAL_KEYS * KEY_HEIGHT
 
 export default function Home() {
@@ -217,6 +216,9 @@ export default function Home() {
     const pianoCanvas = pianoApp.view as HTMLCanvasElement
     pianoCanvas.style.display = 'block'
     pianoCanvas.style.margin = '0 auto'
+    // Set canvas style to prevent scaling
+    pianoCanvas.style.width = `${pianoApp.renderer.width / pianoApp.renderer.resolution}px`
+    pianoCanvas.style.height = `${pianoApp.renderer.height / pianoApp.renderer.resolution}px`
 
     pianoContainerRef.current.appendChild(pianoCanvas)
 
@@ -231,6 +233,11 @@ export default function Home() {
 
     gridAppRef.current = gridApp
     gridContainerRef.current.appendChild(gridApp.view as HTMLCanvasElement)
+
+    // Set canvas style to prevent scaling
+    const gridCanvas = gridApp.view as HTMLCanvasElement
+    gridCanvas.style.width = `${gridApp.renderer.width / gridApp.renderer.resolution}px`
+    gridCanvas.style.height = `${gridApp.renderer.height / gridApp.renderer.resolution}px`
 
     // Initial draw
     drawPianoKeys()
@@ -287,6 +294,10 @@ export default function Home() {
     // Resize grid app with consistent height
     gridApp.renderer.resize(newWidth, totalHeight)
 
+    // Set canvas style to prevent scaling
+    gridApp.view.style.width = `${newWidth / gridApp.renderer.resolution}px`
+    gridApp.view.style.height = `${totalHeight / gridApp.renderer.resolution}px`
+
     // Redraw grid and notes
     drawGrid(newWidth)
     if (notes.length > 0) {
@@ -311,6 +322,10 @@ export default function Home() {
 
     // Resize grid app with consistent height
     gridApp.renderer.resize(newWidth, totalHeight)
+
+    // Set canvas style to prevent scaling
+    gridApp.view.style.width = `${newWidth / gridApp.renderer.resolution}px`
+    gridApp.view.style.height = `${totalHeight / gridApp.renderer.resolution}px`
 
     drawGrid(newWidth)
     if (notes.length > 0) {
