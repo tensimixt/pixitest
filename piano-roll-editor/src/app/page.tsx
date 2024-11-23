@@ -215,7 +215,7 @@ export default function Home() {
       notesContainer.name = 'notesContainer'
 
       const TICKS_PER_BEAT = ustxData.resolution || 480 // Default to 480 if not specified
-      const BEATS_PER_MEASURE = ustxData.beat_per_bar || 4
+      // const BEATS_PER_MEASURE = ustxData.beat_per_bar || 4
       const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
       const NOTE_HEIGHT = WHITE_KEY_HEIGHT // Height of one semitone, matching the key height
 

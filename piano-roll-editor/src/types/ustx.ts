@@ -66,7 +66,7 @@ export interface UstxData {
     lyric: string
     pitch?: Pitch
     vibrato?: Vibrato
-    phoneme_expressions?: any[]
+    phoneme_expressions?: PhonemeExpression[]
     phoneme_overrides?: PhonemeOverride[]
   }
   
@@ -95,4 +95,10 @@ export interface UstxData {
     index: number
     phoneme?: string
     offset?: number
+  }
+
+  export interface PhonemeExpression {
+    index: number
+    key: string
+    value: number | string
   }
