@@ -7,7 +7,7 @@ const PIANO_WIDTH = 100
 const WHITE_KEY_HEIGHT = 20
 const BLACK_KEY_HEIGHT = 12
 const BLACK_KEY_OFFSET = 12
-const PIANO_PATTERN = [true, true, false, true, true, true, false]
+const PIANO_PATTERN = [true, false, true, false, true, true, false, true, false, true, false, true] // Updated pattern for 12 semitones
 
 export default function Home() {
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -34,15 +34,23 @@ export default function Home() {
 
     // Draw piano keys
     const drawPianoKeys = () => {
+      pianoContainer.removeChildren()
+
+      const numWhiteKeys = Math.ceil(pixiApp.screen.height / WHITE_KEY_HEIGHT)
+      const numOctaves = Math.ceil(numWhiteKeys / 7)
+
       // White keys
-      for (let octave = 0; octave < 8; octave++) {
+      for (let octave = 0; octave < numOctaves; octave++) {
         for (let i = 0; i < 7; i++) {
+          const keyYPos = (octave * 7 + i) * WHITE_KEY_HEIGHT
+          if (keyYPos >= pixiApp.screen.height) break // Stop if exceeding screen height
+
           const key = new PIXI.Graphics()
-          key.beginFill(0xFFFFFF)
+          key.beginFill(0xffffff)
           key.lineStyle(1, 0x000000)
           key.drawRect(
             0,
-            (octave * 7 + i) * WHITE_KEY_HEIGHT,
+            keyYPos,
             PIANO_WIDTH,
             WHITE_KEY_HEIGHT
           )
@@ -52,14 +60,17 @@ export default function Home() {
       }
 
       // Black keys
-      for (let octave = 0; octave < 8; octave++) {
-        for (let i = 0; i < 7; i++) {
-          if (PIANO_PATTERN[i]) {
+      for (let octave = 0; octave < numOctaves; octave++) {
+        for (let i = 0; i < 12; i++) { // Loop over 12 semitones
+          if (PIANO_PATTERN[i % 12]) {
+            const keyYPos = (octave * 7 + Math.floor(i / 2)) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET
+            if (keyYPos >= pixiApp.screen.height) break // Stop if exceeding screen height
+
             const key = new PIXI.Graphics()
             key.beginFill(0x000000)
             key.drawRect(
               0,
-              (octave * 7 + i) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET,
+              keyYPos,
               PIANO_WIDTH - BLACK_KEY_OFFSET,
               BLACK_KEY_HEIGHT
             )
@@ -72,6 +83,8 @@ export default function Home() {
 
     // Draw grid
     const drawGrid = () => {
+      gridContainer.removeChildren()
+
       const grid = new PIXI.Graphics()
       grid.lineStyle(1, 0x3f3f3f)
       
@@ -97,9 +110,9 @@ export default function Home() {
           canvasRef.current.clientWidth,
           canvasRef.current.clientHeight
         )
-        // Redraw grid when resizing
-        gridContainer.removeChildren()
+        // Redraw grid and piano keys when resizing
         drawGrid()
+        drawPianoKeys()
       }
     }
 
