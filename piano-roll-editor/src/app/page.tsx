@@ -11,117 +11,123 @@ const PIANO_PATTERN = [true, true, false, true, true, true, false]
 
 export default function Home() {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const appRef = useRef<PIXI.Application | null>(null) // Use ref instead of state for the PIXI app
+  const appRef = useRef<PIXI.Application | null>(null)
 
   useEffect(() => {
-    // Make sure we're in the browser and the ref is available
-    if (typeof window === 'undefined' || !canvasRef.current) return
+    if (typeof window === 'undefined' || !canvasRef.current || appRef.current) return
 
-    try {
-      const pixiApp = new PIXI.Application({
-        width: canvasRef.current?.clientWidth || 800,
-        height: canvasRef.current?.clientHeight || 600,
-        backgroundColor: 0x2c2c2c,
-        antialias: true,
-        resolution: window.devicePixelRatio || 1,
-      })
+    const pixiApp = new PIXI.Application({
+      background: '#2c2c2c',
+      resizeTo: canvasRef.current,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+    })
 
-      // Store the app reference
-      appRef.current = pixiApp
+    appRef.current = pixiApp
+    canvasRef.current.appendChild(pixiApp.view as HTMLCanvasElement)
 
-      // Make sure the canvas ref still exists
-      if (canvasRef.current) {
-        canvasRef.current.appendChild(pixiApp.view as HTMLCanvasElement)
+    // Create containers
+    const pianoContainer = new PIXI.Container()
+    const gridContainer = new PIXI.Container()
+    pixiApp.stage.addChild(pianoContainer)
+    pixiApp.stage.addChild(gridContainer)
 
-        // Create containers
-        const pianoContainer = new PIXI.Container()
-        const gridContainer = new PIXI.Container()
-        pixiApp.stage.addChild(pianoContainer)
-        pixiApp.stage.addChild(gridContainer)
-
-        // Draw piano keys
-        const drawPianoKeys = () => {
-          // Draw white keys first
-          for (let octave = 0; octave < 8; octave++) {
-            for (let i = 0; i < 7; i++) {
-              const key = new PIXI.Graphics()
-              key.beginFill(0xFFFFFF)
-              key.lineStyle(1, 0x000000)
-              key.drawRect(
-                0,
-                (octave * 7 + i) * WHITE_KEY_HEIGHT,
-                PIANO_WIDTH,
-                WHITE_KEY_HEIGHT
-              )
-              key.endFill()
-              pianoContainer.addChild(key)
-            }
-          }
-
-          // Draw black keys on top
-          for (let octave = 0; octave < 8; octave++) {
-            for (let i = 0; i < 7; i++) {
-              if (PIANO_PATTERN[i]) {
-                const key = new PIXI.Graphics()
-                key.beginFill(0x000000)
-                key.drawRect(
-                  0,
-                  (octave * 7 + i) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET,
-                  PIANO_WIDTH - BLACK_KEY_OFFSET,
-                  BLACK_KEY_HEIGHT
-                )
-                key.endFill()
-                pianoContainer.addChild(key)
-              }
-            }
-          }
+    // Draw piano keys
+    const drawPianoKeys = () => {
+      // White keys
+      for (let octave = 0; octave < 8; octave++) {
+        for (let i = 0; i < 7; i++) {
+          const key = new PIXI.Graphics()
+          key.beginFill(0xFFFFFF)
+          key.lineStyle(1, 0x000000)
+          key.drawRect(
+            0,
+            (octave * 7 + i) * WHITE_KEY_HEIGHT,
+            PIANO_WIDTH,
+            WHITE_KEY_HEIGHT
+          )
+          key.endFill()
+          pianoContainer.addChild(key)
         }
-
-        // Draw grid
-        const drawGrid = () => {
-          const grid = new PIXI.Graphics()
-          grid.lineStyle(1, 0x3f3f3f)
-          
-          // Vertical lines
-          for (let x = PIANO_WIDTH; x < pixiApp.screen.width; x += 100) {
-            grid.moveTo(x, 0)
-            grid.lineTo(x, pixiApp.screen.height)
-          }
-
-          // Horizontal lines
-          for (let y = 0; y < pixiApp.screen.height; y += WHITE_KEY_HEIGHT) {
-            grid.moveTo(PIANO_WIDTH, y)
-            grid.lineTo(pixiApp.screen.width, y)
-          }
-
-          gridContainer.addChild(grid)
-        }
-
-        drawPianoKeys()
-        drawGrid()
       }
-    } catch (error) {
-      console.error('Error initializing PIXI:', error)
+
+      // Black keys
+      for (let octave = 0; octave < 8; octave++) {
+        for (let i = 0; i < 7; i++) {
+          if (PIANO_PATTERN[i]) {
+            const key = new PIXI.Graphics()
+            key.beginFill(0x000000)
+            key.drawRect(
+              0,
+              (octave * 7 + i) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET,
+              PIANO_WIDTH - BLACK_KEY_OFFSET,
+              BLACK_KEY_HEIGHT
+            )
+            key.endFill()
+            pianoContainer.addChild(key)
+          }
+        }
+      }
     }
 
-    // Cleanup function
+    // Draw grid
+    const drawGrid = () => {
+      const grid = new PIXI.Graphics()
+      grid.lineStyle(1, 0x3f3f3f)
+      
+      // Vertical lines
+      for (let x = PIANO_WIDTH; x < pixiApp.screen.width; x += 50) {
+        grid.moveTo(x, 0)
+        grid.lineTo(x, pixiApp.screen.height)
+      }
+
+      // Horizontal lines
+      for (let y = 0; y < pixiApp.screen.height; y += WHITE_KEY_HEIGHT) {
+        grid.moveTo(PIANO_WIDTH, y)
+        grid.lineTo(pixiApp.screen.width, y)
+      }
+
+      gridContainer.addChild(grid)
+    }
+
+    // Handle resize
+    const handleResize = () => {
+      if (canvasRef.current && appRef.current) {
+        appRef.current.renderer.resize(
+          canvasRef.current.clientWidth,
+          canvasRef.current.clientHeight
+        )
+        // Redraw grid when resizing
+        gridContainer.removeChildren()
+        drawGrid()
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    
+    // Initial draw
+    drawPianoKeys()
+    drawGrid()
+
+    // Cleanup
     return () => {
+      window.removeEventListener('resize', handleResize)
       if (appRef.current) {
         appRef.current.destroy(true)
         appRef.current = null
       }
     }
-  }, []) // Remove app from dependencies
+  }, [])
 
   return (
-    <main className="min-h-screen p-4">
+    <main className="min-h-screen p-4 bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Piano Roll Editor</h1>
+        <h1 className="text-2xl font-bold text-white">Piano Roll Editor</h1>
         <div className="space-x-2">
-          <button className="px-3 py-1 bg-blue-500 rounded hover:bg-blue-600">
+          <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
             Load USTX
           </button>
-          <button className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">
+          <button className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors">
             Play
           </button>
         </div>
