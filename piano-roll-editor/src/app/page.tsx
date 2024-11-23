@@ -101,7 +101,7 @@ export default function Home() {
 
     // Horizontal lines for each key
     let keyY = 0
-    for (let i = 0; i < TOTAL_KEYS; i++) {
+    for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
       grid.moveTo(0, keyY)
       grid.lineTo(gridWidth, keyY)
       keyY += KEY_HEIGHT
