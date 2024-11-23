@@ -3,49 +3,104 @@
 import { useEffect, useRef, useState } from 'react'
 import * as PIXI from 'pixi.js'
 
+const PIANO_WIDTH = 100 // Width of piano keys
+const WHITE_KEY_HEIGHT = 20 // Height of white keys
+const BLACK_KEY_HEIGHT = 12 // Height of black keys
+const BLACK_KEY_OFFSET = 12 // How far black keys stick out
+
+// Define piano key patterns (true = has black key after)
+const PIANO_PATTERN = [true, true, false, true, true, true, false] 
+
 export default function Home() {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const [isMounted, setIsMounted] = useState(false)
-  
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const [app, setApp] = useState<PIXI.Application | null>(null)
 
   useEffect(() => {
-    if (!isMounted || !canvasRef.current) return
+    if (!canvasRef.current || app) return
 
-    // Only initialize PIXI after component is mounted
-    let app: PIXI.Application | null = null
-    
-    try {
-      app = new PIXI.Application({
-        width: 800,
-        height: 600,
-        backgroundColor: 0x2c2c2c,
-        antialias: true,
-      })
+    // Initialize PIXI Application
+    const pixiApp = new PIXI.Application({
+      resizeTo: canvasRef.current,
+      backgroundColor: 0x2c2c2c,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+    })
 
-      canvasRef.current.appendChild(app.view as HTMLCanvasElement)
+    canvasRef.current.appendChild(pixiApp.view as HTMLCanvasElement)
+    setApp(pixiApp)
 
-      const notesContainer = new PIXI.Container()
-      app.stage.addChild(notesContainer)
+    // Create containers
+    const pianoContainer = new PIXI.Container()
+    const gridContainer = new PIXI.Container()
+    pixiApp.stage.addChild(pianoContainer)
+    pixiApp.stage.addChild(gridContainer)
 
-      // Rest of your PIXI initialization code...
-    } catch (error) {
-      console.error('PIXI initialization error:', error)
-    }
+    // Draw piano keys
+    const drawPianoKeys = () => {
+      // Draw white keys first
+      for (let octave = 0; octave < 8; octave++) {
+        for (let i = 0; i < 7; i++) {
+          const key = new PIXI.Graphics()
+          key.beginFill(0xFFFFFF)
+          key.lineStyle(1, 0x000000)
+          key.drawRect(
+            0,
+            (octave * 7 + i) * WHITE_KEY_HEIGHT,
+            PIANO_WIDTH,
+            WHITE_KEY_HEIGHT
+          )
+          key.endFill()
+          pianoContainer.addChild(key)
+        }
+      }
 
-    // Cleanup
-    return () => {
-      if (app) {
-        app.destroy(true)
+      // Draw black keys on top
+      for (let octave = 0; octave < 8; octave++) {
+        for (let i = 0; i < 7; i++) {
+          if (PIANO_PATTERN[i]) {
+            const key = new PIXI.Graphics()
+            key.beginFill(0x000000)
+            key.drawRect(
+              0,
+              (octave * 7 + i) * WHITE_KEY_HEIGHT + BLACK_KEY_OFFSET,
+              PIANO_WIDTH - BLACK_KEY_OFFSET,
+              BLACK_KEY_HEIGHT
+            )
+            key.endFill()
+            pianoContainer.addChild(key)
+          }
+        }
       }
     }
-  }, [isMounted]) // Add isMounted as dependency
 
-  if (!isMounted) {
-    return null // or a loading state
-  }
+    // Draw grid
+    const drawGrid = () => {
+      const grid = new PIXI.Graphics()
+      grid.lineStyle(1, 0x3f3f3f)
+      
+      // Vertical lines
+      for (let x = PIANO_WIDTH; x < pixiApp.screen.width; x += 100) {
+        grid.moveTo(x, 0)
+        grid.lineTo(x, pixiApp.screen.height)
+      }
+
+      // Horizontal lines
+      for (let y = 0; y < pixiApp.screen.height; y += WHITE_KEY_HEIGHT) {
+        grid.moveTo(PIANO_WIDTH, y)
+        grid.lineTo(pixiApp.screen.width, y)
+      }
+
+      gridContainer.addChild(grid)
+    }
+
+    drawPianoKeys()
+    drawGrid()
+
+    // Cleanup on unmount
+    return () => {
+      pixiApp.destroy(true)
+    }
+  }, [app])
 
   return (
     <main className="min-h-screen p-4">
