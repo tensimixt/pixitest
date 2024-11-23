@@ -9,7 +9,7 @@ import { UstxData, Note } from '../types/ustx'
 const PIANO_WIDTH = 130 // Width of the piano container
 const KEY_WIDTH = 110   // Width of the keys
 const KEY_X_OFFSET = (PIANO_WIDTH - KEY_WIDTH) / 2 // Offset to center the keys
-const KEY_HEIGHT = 20 // Equal height for all keys
+const KEY_HEIGHT = 12 // Reduced key height to fit more notes vertically
 const TOTAL_KEYS = 128 // From MIDI note 0 to 127
 
 export default function Home() {
@@ -72,7 +72,7 @@ export default function Home() {
       // Create text for the key name
       const keyText = new PIXI.Text(keyName, {
         fontFamily: 'Arial',
-        fontSize: 8, // Reduced font size
+        fontSize: 7, // Adjusted font size for smaller keys
         fill: black ? 0xffffff : 0x000000, // White text on black keys, black text on white keys
         align: 'left',
       })
@@ -173,7 +173,7 @@ export default function Home() {
       // Add the lyric text
       const lyricText = new PIXI.Text(lyric, {
         fontFamily: 'Arial',
-        fontSize: 12,
+        fontSize: 8, // Adjusted font size for smaller notes
         fill: 0x000000,
         align: 'center',
       })
