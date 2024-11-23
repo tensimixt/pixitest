@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useRef } from 'react'
@@ -147,7 +146,7 @@ export default function Home() {
           // **Create text for the key name**
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
-            fontSize: 10, // Reduced font size
+            fontSize: 8, // Reduced font size
             fill: 0xffffff, // White color for text on black keys
             align: 'left',
           })
@@ -167,14 +166,45 @@ export default function Home() {
       }
     }
 
-    // **Draw grid in gridApp** (no changes needed)
+    // **Draw grid in gridApp**
     const drawGrid = () => {
-      // ... existing code remains the same ...
+      const gridStage = gridApp.stage
+      gridStage.removeChildren()
+
+      const grid = new PIXI.Graphics()
+      grid.lineStyle(1, 0x3f3f3f)
+
+      // Horizontal lines aligned with white keys
+      let whiteKeyY = 0
+      for (let i = 0; i < TOTAL_KEYS; i++) {
+        if (!isBlackKey(i)) {
+          grid.moveTo(0, whiteKeyY)
+          grid.lineTo(gridApp.screen.width, whiteKeyY)
+          whiteKeyY += WHITE_KEY_HEIGHT
+        }
+      }
+
+      // Vertical lines
+      for (let x = 0; x < gridApp.screen.width; x += 50) {
+        grid.moveTo(x, 0)
+        grid.lineTo(x, gridApp.screen.height)
+      }
+
+      gridStage.addChild(grid)
     }
 
-    // **Handle resize** (no changes needed)
+    // **Handle resize**
     const handleResize = () => {
-      // ... existing code remains the same ...
+      if (!gridContainerRef.current || !gridAppRef.current) return
+
+      // Resize grid app
+      gridApp.renderer.resize(
+        gridContainerRef.current.clientWidth,
+        totalHeight
+      )
+
+      // Redraw grid
+      drawGrid()
     }
 
     // **Initial draw**
@@ -185,11 +215,32 @@ export default function Home() {
     window.addEventListener('resize', handleResize)
 
     // Synchronize vertical scrolling between piano and grid containers
-    // ... existing scroll synchronization code ...
+    const syncScroll = () => {
+      if (!pianoContainerRef.current || !gridContainerRef.current) return
+      pianoContainerRef.current.scrollTop = gridContainerRef.current.scrollTop
+    }
+
+    const syncScrollReverse = () => {
+      if (!pianoContainerRef.current || !gridContainerRef.current) return
+      gridContainerRef.current.scrollTop = pianoContainerRef.current.scrollTop
+    }
+
+    gridContainerRef.current.addEventListener('scroll', syncScroll)
+    pianoContainerRef.current.addEventListener('scroll', syncScrollReverse)
 
     // **Cleanup**
     return () => {
-      // ... existing cleanup code ...
+      window.removeEventListener('resize', handleResize)
+      gridContainerRef.current?.removeEventListener('scroll', syncScroll)
+      pianoContainerRef.current?.removeEventListener('scroll', syncScrollReverse)
+      if (pianoAppRef.current) {
+        pianoAppRef.current.destroy(true)
+        pianoAppRef.current = null
+      }
+      if (gridAppRef.current) {
+        gridAppRef.current.destroy(true)
+        gridAppRef.current = null
+      }
     }
   }, [])
 
@@ -216,7 +267,6 @@ export default function Home() {
             width: `${PIANO_WIDTH}px`,
             maxHeight: '600px',
             overflowX: 'hidden', // Prevent horizontal scrolling
-            // No display: flex or justifyContent needed
           }}
         />
         <div
