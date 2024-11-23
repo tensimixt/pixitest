@@ -107,7 +107,7 @@ export default function Home() {
           // **Create text for the key name**
           const keyText = new PIXI.Text(keyName, {
             fontFamily: 'Arial',
-            fontSize: 10, // Reduced font size
+            fontSize: 8, // Reduced font size
             fill: 0x000000, // Black color for text on white keys
             align: 'left',
           })
