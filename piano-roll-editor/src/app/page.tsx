@@ -52,7 +52,7 @@ export default function Home() {
     return maxTick
   }
 
-  // Draw piano keys in pianoApp
+  // Modify drawPianoKeys to ensure perfect alignment
   const drawPianoKeys = () => {
     if (!pianoAppRef.current) return
     const pianoApp = pianoAppRef.current
@@ -60,74 +60,71 @@ export default function Home() {
     pianoStage.removeChildren()
 
     let keyY = 0
-
     for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
-      const black = isBlackKey(i)
-      const keyName = getKeyName(i)
+        const black = isBlackKey(i)
+        const keyName = getKeyName(i)
 
-      const key = new PIXI.Graphics()
-      key.beginFill(black ? 0x2c2c2c : 0xffffff)
-      key.lineStyle(1, 0x000000)
-      key.drawRect(KEY_X_OFFSET, keyY, KEY_WIDTH, KEY_HEIGHT)
-      key.endFill()
+        const key = new PIXI.Graphics()
+        key.lineStyle(1, 0x000000)  // Add border before fill
+        key.beginFill(black ? 0x2c2c2c : 0xffffff)
+        key.drawRect(KEY_X_OFFSET, keyY, KEY_WIDTH, KEY_HEIGHT)
+        key.endFill()
 
-      // Create text for the key name
-      const keyText = new PIXI.Text(keyName, {
-        fontFamily: 'Arial',
-        fontSize: 7, // Adjusted font size for smaller keys
-        fill: black ? 0xffffff : 0x000000, // White text on black keys, black text on white keys
-        align: 'left',
-      })
-      // Align the text to the left
-      keyText.anchor.set(0, 0.5) // Left-aligned, center vertically
-      keyText.x = KEY_X_OFFSET + 5 // Move text 5 pixels from the left edge of the key
-      keyText.y = keyY + KEY_HEIGHT / 2
+        const keyText = new PIXI.Text(keyName, {
+            fontFamily: 'Arial',
+            fontSize: 7,
+            fill: black ? 0xffffff : 0x000000,
+            align: 'left',
+        })
+        keyText.anchor.set(0, 0.5)
+        keyText.x = KEY_X_OFFSET + 5
+        keyText.y = keyY + KEY_HEIGHT / 2
 
-      // Add key and text to the stage
-      pianoStage.addChild(key)
-      pianoStage.addChild(keyText)
+        pianoStage.addChild(key)
+        pianoStage.addChild(keyText)
 
-      keyY += KEY_HEIGHT
+        keyY += KEY_HEIGHT
     }
   }
 
   // Draw grid in gridApp
-  const drawGrid = (gridWidth: number) => {
-    if (!gridAppRef.current) return
-    const gridApp = gridAppRef.current
-    const gridStage = gridApp.stage
-    gridStage.removeChildren()
+// Modify the drawGrid function to ensure perfect alignment
+const drawGrid = (gridWidth: number) => {
+  if (!gridAppRef.current) return
+  const gridApp = gridAppRef.current
+  const gridStage = gridApp.stage
+  gridStage.removeChildren()
 
-    const grid = new PIXI.Graphics()
-    grid.lineStyle(1, 0x3f3f3f)
-
-    // Horizontal lines for each key
-    let keyY = 0
-    for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
-      grid.moveTo(0, keyY)
-      grid.lineTo(gridWidth, keyY)
-      keyY += KEY_HEIGHT
-    }
-
-    // Vertical lines
-    for (let x = 0; x < gridWidth; x += 50) {
-      grid.moveTo(x, 0)
-      grid.lineTo(x, gridApp.screen.height)
-    }
-
-    // Background shading for black keys
-    keyY = 0
-    for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
+  const grid = new PIXI.Graphics()
+  
+  // Draw background shading for black keys first
+  let keyY = 0
+  for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
       if (isBlackKey(i)) {
-        grid.beginFill(0x262626)
-        grid.drawRect(0, keyY, gridWidth, KEY_HEIGHT)
-        grid.endFill()
+          grid.beginFill(0x262626, 0.5)  // Reduced alpha for better visibility
+          grid.drawRect(0, keyY, gridWidth, KEY_HEIGHT)
+          grid.endFill()
       }
       keyY += KEY_HEIGHT
-    }
-
-    gridStage.addChild(grid)
   }
+
+  // Draw horizontal grid lines with precise alignment
+  grid.lineStyle(1, 0x3f3f3f, 0.5)  // Thinner lines with reduced alpha
+  for (let i = 0; i <= TOTAL_KEYS; i++) {
+      const y = i * KEY_HEIGHT
+      grid.moveTo(0, y)
+      grid.lineTo(gridWidth, y)
+  }
+
+  // Draw vertical grid lines
+  const GRID_UNIT_WIDTH = 50
+  for (let x = 0; x <= gridWidth; x += GRID_UNIT_WIDTH) {
+      grid.moveTo(x, 0)
+      grid.lineTo(x, TOTAL_KEYS * KEY_HEIGHT)
+  }
+
+  gridStage.addChild(grid)
+}
 
   // Draw notes
   const drawNotes = (notes: Note[]) => {
@@ -351,47 +348,42 @@ export default function Home() {
     drawNotes(notes) // Always redraw notes after grid
   }
 
-  // Effect to update grid and notes when ustxData or notes change
-  useEffect(() => {
-    if (!gridAppRef.current || !gridContainerRef.current || !ustxData) return
+// Modify the useEffect that handles USTX data loading
+useEffect(() => {
+  if (!gridAppRef.current || !gridContainerRef.current || !ustxData) return
 
-    const gridApp = gridAppRef.current
-    const TICKS_PER_BEAT = ustxData.resolution || 480
-    const GRID_UNIT_WIDTH = 50
-    const totalTicks = getTotalDurationInTicks(notes)
-    const totalBeats = totalTicks / TICKS_PER_BEAT
-    const gridWidth = totalBeats * GRID_UNIT_WIDTH
-    const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
+  const gridApp = gridAppRef.current
+  const TICKS_PER_BEAT = ustxData.resolution || 480
+  const GRID_UNIT_WIDTH = 50
+  const totalTicks = getTotalDurationInTicks(notes)
+  const totalBeats = totalTicks / TICKS_PER_BEAT
+  const gridWidth = totalBeats * GRID_UNIT_WIDTH
+  const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
+  const fullHeight = TOTAL_KEYS * KEY_HEIGHT
 
-    // Resize grid app
-    gridApp.renderer.resize(newWidth, totalHeight)
+  // Ensure grid container has proper dimensions
+  if (gridContainerRef.current) {
+      gridContainerRef.current.style.position = 'relative'
+      gridContainerRef.current.style.overflow = 'auto'
+      gridContainerRef.current.style.height = '100%'
+  }
 
-    // Get the grid canvas
-    const gridCanvas = gridApp.view as HTMLCanvasElement
-    gridCanvas.style.width = `${newWidth / gridApp.renderer.resolution}px`
-    gridCanvas.style.height = `${totalHeight / gridApp.renderer.resolution}px`
+  // Set up the canvas with precise positioning
+  const canvas = gridApp.view as HTMLCanvasElement
+  canvas.style.position = 'absolute'
+  canvas.style.top = '0'
+  canvas.style.left = '0'
+  canvas.style.width = `${newWidth}px`
+  canvas.style.height = `${fullHeight}px`
 
-    // Ensure proper wrapper structure
-    let wrapper = gridCanvas.parentElement
-    if (!wrapper || wrapper === gridContainerRef.current) {
-        wrapper = document.createElement('div')
-        gridCanvas.parentElement?.removeChild(gridCanvas)
-        wrapper.appendChild(gridCanvas)
-        gridContainerRef.current.appendChild(wrapper)
-    }
-    
-    // Set wrapper styles
-    wrapper.style.height = `${totalHeight}px`
-    wrapper.style.position = 'relative'
-    gridCanvas.style.position = 'absolute'
-    gridCanvas.style.top = '0'
-    gridCanvas.style.left = '0'
+  // Resize with precise dimensions
+  gridApp.renderer.resize(newWidth, fullHeight)
 
-    // Redraw
-    drawGrid(newWidth)
-    if (notes.length > 0) {
-        drawNotes(notes)
-    }
+  // Draw grid first, then notes
+  drawGrid(newWidth)
+  if (notes.length > 0) {
+      drawNotes(notes)
+  }
 }, [ustxData, notes])
 
   // Handle file upload
