@@ -279,32 +279,30 @@ export default function Home() {
 
   // Handle resize
   const handleResize = () => {
-    if (!gridContainerRef.current || !gridAppRef.current) return
-
+    if (!gridContainerRef.current || !gridAppRef.current || !ustxData) return
+  
     const gridApp = gridAppRef.current
-
-    const TICKS_PER_BEAT = ustxData?.resolution || 480
+  
+    const TICKS_PER_BEAT = ustxData.resolution || 480
     const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
-
+  
     const totalTicks = getTotalDurationInTicks(notes)
     const totalBeats = totalTicks / TICKS_PER_BEAT
     const gridWidth = totalBeats * GRID_UNIT_WIDTH
-
+  
     const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
-
+  
     // Resize grid app with consistent height
     gridApp.renderer.resize(newWidth, totalHeight)
-
+  
     // Set canvas style to prevent scaling
     const gridCanvas = gridApp.view as HTMLCanvasElement
     gridCanvas.style.width = `${newWidth / gridApp.renderer.resolution}px`
     gridCanvas.style.height = `${totalHeight / gridApp.renderer.resolution}px`
-
-    // Redraw grid and notes
+  
+    // Redraw everything in the correct order
     drawGrid(newWidth)
-    if (notes.length > 0) {
-      drawNotes(notes)
-    }
+    drawNotes(notes) // Always redraw notes after grid
   }
 
   // Effect to update grid and notes when ustxData or notes change
