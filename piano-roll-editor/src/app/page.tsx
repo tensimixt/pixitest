@@ -190,10 +190,19 @@ export default function Home() {
       noteGraphics.endFill()
 
       const lyricText = new PIXI.Text(note.lyric, {
-        fontFamily: 'Arial',
-        fontSize: 8,
+        fontFamily: 'Arial, Helvetica, sans-serif', // Multiple font fallbacks
+        fontSize: 11, // Slightly larger
         fill: 0x000000,
         align: 'center',
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        padding: 4,
+        stroke: 0xffffff,
+        strokeThickness: 2, // Thicker stroke for better contrast
+        lineJoin: 'round', // Rounds the corners of the stroke
+        dropShadowDistance: 1, // Short shadow distance
+        wordWrap: false, // Prevent text wrapping
+        trim: true, // Trim whitespace
       })
       lyricText.anchor.set(0.5, 0.5)
       lyricText.x = x + width / 2
