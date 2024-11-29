@@ -330,6 +330,22 @@ export default function Home() {
     gridCanvas.style.width = `${newWidth / gridApp.renderer.resolution}px`
     gridCanvas.style.height = `${totalHeight / gridApp.renderer.resolution}px`
   
+    // Create or update wrapper div for proper scrolling
+    let wrapper = gridCanvas.parentElement
+    if (!wrapper || wrapper === gridContainerRef.current) {
+      wrapper = document.createElement('div')
+      gridCanvas.parentElement?.removeChild(gridCanvas)
+      wrapper.appendChild(gridCanvas)
+      gridContainerRef.current.appendChild(wrapper)
+    }
+    
+    // Set wrapper styles for proper scrolling
+    wrapper.style.height = `${totalHeight}px`
+    wrapper.style.position = 'relative'
+    gridCanvas.style.position = 'absolute'
+    gridCanvas.style.top = '0'
+    gridCanvas.style.left = '0'
+  
     // Redraw everything in the correct order
     drawGrid(newWidth)
     drawNotes(notes) // Always redraw notes after grid
