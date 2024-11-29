@@ -356,29 +356,43 @@ export default function Home() {
     if (!gridAppRef.current || !gridContainerRef.current || !ustxData) return
 
     const gridApp = gridAppRef.current
-
     const TICKS_PER_BEAT = ustxData.resolution || 480
-    const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
-
+    const GRID_UNIT_WIDTH = 50
     const totalTicks = getTotalDurationInTicks(notes)
     const totalBeats = totalTicks / TICKS_PER_BEAT
     const gridWidth = totalBeats * GRID_UNIT_WIDTH
-
     const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
 
-    // Resize grid app with consistent height
+    // Resize grid app
     gridApp.renderer.resize(newWidth, totalHeight)
 
-    // Set canvas style to prevent scaling
+    // Get the grid canvas
     const gridCanvas = gridApp.view as HTMLCanvasElement
     gridCanvas.style.width = `${newWidth / gridApp.renderer.resolution}px`
     gridCanvas.style.height = `${totalHeight / gridApp.renderer.resolution}px`
 
+    // Ensure proper wrapper structure
+    let wrapper = gridCanvas.parentElement
+    if (!wrapper || wrapper === gridContainerRef.current) {
+        wrapper = document.createElement('div')
+        gridCanvas.parentElement?.removeChild(gridCanvas)
+        wrapper.appendChild(gridCanvas)
+        gridContainerRef.current.appendChild(wrapper)
+    }
+    
+    // Set wrapper styles
+    wrapper.style.height = `${totalHeight}px`
+    wrapper.style.position = 'relative'
+    gridCanvas.style.position = 'absolute'
+    gridCanvas.style.top = '0'
+    gridCanvas.style.left = '0'
+
+    // Redraw
     drawGrid(newWidth)
     if (notes.length > 0) {
-      drawNotes(notes)
+        drawNotes(notes)
     }
-  }, [ustxData, notes])
+}, [ustxData, notes])
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
