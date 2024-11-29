@@ -291,6 +291,15 @@ export default function Home() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Piano Roll Editor</h1>
         <div className="space-x-2">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Piano Roll Editor</h1>
+          {ustxData && (
+            <div className="text-white">
+              <p>Project: {ustxData.name}</p>
+              <p>BPM: {currentBPM}</p>
+            </div>
+          )}
+        </div>
           <input
             type="file"
             accept=".ustx"
