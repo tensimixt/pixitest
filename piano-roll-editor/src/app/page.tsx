@@ -240,22 +240,52 @@ export default function Home() {
     gridCanvas.style.width = `${gridApp.renderer.width / gridApp.renderer.resolution}px`
     gridCanvas.style.height = `${gridApp.renderer.height / gridApp.renderer.resolution}px`
 
+    // Set the scrollHeight explicitly for both containers
+    if (pianoContainerRef.current && gridContainerRef.current) {
+      const scrollHeight = totalHeight;
+      pianoContainerRef.current.style.height = '600px'; // Match the container height
+      gridContainerRef.current.style.height = '600px';  // Match the container height
+      
+      // Create a wrapper div for the grid canvas to ensure proper scrolling
+      const gridWrapper = document.createElement('div');
+      gridWrapper.style.height = `${scrollHeight}px`;
+      gridWrapper.style.position = 'relative';
+      gridCanvas.style.position = 'absolute';
+      gridCanvas.style.top = '0';
+      gridCanvas.style.left = '0';
+      
+      // Replace the canvas with the wrapper containing the canvas
+      gridContainerRef.current.innerHTML = '';
+      gridWrapper.appendChild(gridCanvas);
+      gridContainerRef.current.appendChild(gridWrapper);
+    }
+
     // Initial draw
     drawPianoKeys()
     drawGrid(gridApp.screen.width)
 
+    if (notes.length > 0) {
+      drawNotes(notes)
+    }
+
     // Handle resize event
-    window.addEventListener('resize', handleResize)
+    // window.addEventListener('resize', handleResize)
 
     // Synchronize vertical scrolling between piano and grid containers
     const syncScroll = () => {
       if (!pianoContainerRef.current || !gridContainerRef.current) return
-      pianoContainerRef.current.scrollTop = gridContainerRef.current.scrollTop
+      const scrollTop = gridContainerRef.current.scrollTop;
+      if (pianoContainerRef.current.scrollTop !== scrollTop) {
+        pianoContainerRef.current.scrollTop = scrollTop;
+      }
     }
 
     const syncScrollReverse = () => {
       if (!pianoContainerRef.current || !gridContainerRef.current) return
-      gridContainerRef.current.scrollTop = pianoContainerRef.current.scrollTop
+      const scrollTop = pianoContainerRef.current.scrollTop;
+      if (gridContainerRef.current.scrollTop !== scrollTop) {
+        gridContainerRef.current.scrollTop = scrollTop;
+      }
     }
 
     gridContainerRef.current.addEventListener('scroll', syncScroll)
