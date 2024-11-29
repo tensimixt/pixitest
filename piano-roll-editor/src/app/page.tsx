@@ -424,9 +424,9 @@ export default function Home() {
           ref={gridContainerRef}
           className="flex-1 overflow-auto"
           style={{
-            maxHeight: '600px',
-            overflowX: 'auto', // Enable horizontal scrolling
-            whiteSpace: 'nowrap', // Prevent canvas from wrappings
+            height: '600px',
+            overflowX: 'auto',
+            overflowY: 'auto',
           }}
         />
       </div>
