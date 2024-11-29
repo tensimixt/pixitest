@@ -1,9 +1,9 @@
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import * as PIXI from 'pixi.js'
 import yaml from 'js-yaml'
+import debounce from 'lodash.debounce' // Import lodash.debounce
 import { UstxData, Note } from '../types/ustx'
 
 const PIANO_WIDTH = 130 // Width of the piano container
@@ -61,70 +61,72 @@ export default function Home() {
 
     let keyY = 0
     for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
-        const black = isBlackKey(i)
-        const keyName = getKeyName(i)
+      const black = isBlackKey(i)
+      const keyName = getKeyName(i)
 
-        const key = new PIXI.Graphics()
-        key.lineStyle(1, 0x000000)  // Add border before fill
-        key.beginFill(black ? 0x2c2c2c : 0xffffff)
-        key.drawRect(KEY_X_OFFSET, keyY, KEY_WIDTH, KEY_HEIGHT)
-        key.endFill()
+      const key = new PIXI.Graphics()
+      key.lineStyle(1, 0x000000)  // Add border before fill
+      key.beginFill(black ? 0x2c2c2c : 0xffffff)
+      key.drawRect(KEY_X_OFFSET, keyY, KEY_WIDTH, KEY_HEIGHT)
+      key.endFill()
 
-        const keyText = new PIXI.Text(keyName, {
-            fontFamily: 'Arial',
-            fontSize: 7,
-            fill: black ? 0xffffff : 0x000000,
-            align: 'left',
-        })
-        keyText.anchor.set(0, 0.5)
-        keyText.x = KEY_X_OFFSET + 5
-        keyText.y = keyY + KEY_HEIGHT / 2
+      const keyText = new PIXI.Text(keyName, {
+        fontFamily: 'Arial',
+        fontSize: 7,
+        fill: black ? 0xffffff : 0x000000,
+        align: 'left',
+      })
+      keyText.anchor.set(0, 0.5)
+      keyText.x = KEY_X_OFFSET + 5
+      keyText.y = keyY + KEY_HEIGHT / 2
 
-        pianoStage.addChild(key)
-        pianoStage.addChild(keyText)
+      pianoStage.addChild(key)
+      pianoStage.addChild(keyText)
 
-        keyY += KEY_HEIGHT
+      keyY += KEY_HEIGHT
     }
   }
 
   // Draw grid in gridApp
-// Modify the drawGrid function to ensure perfect alignment
-const drawGrid = (gridWidth: number) => {
-  if (!gridAppRef.current) return
-  const gridApp = gridAppRef.current
-  const gridStage = gridApp.stage
-  gridStage.removeChildren()
+  const drawGrid = (gridWidth: number) => {
+    if (!gridAppRef.current) return
+    const gridApp = gridAppRef.current
+    const gridStage = gridApp.stage
+    gridStage.removeChildren()
 
-  const grid = new PIXI.Graphics()
-  
-  // Draw background shading for black keys first
-  let keyY = 0
-  for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
+    const grid = new PIXI.Graphics()
+    
+    // Use constant KEY_HEIGHT for all calculations
+    const FIXED_KEY_HEIGHT = KEY_HEIGHT // Keep this constant
+
+    // Draw background shading for black keys first
+    let keyY = 0
+    for (let i = TOTAL_KEYS - 1; i >= 0; i--) {
       if (isBlackKey(i)) {
-          grid.beginFill(0x262626, 0.5)  // Reduced alpha for better visibility
-          grid.drawRect(0, keyY, gridWidth, KEY_HEIGHT)
-          grid.endFill()
+        grid.beginFill(0x262626, 0.5)
+        grid.drawRect(0, keyY, gridWidth, FIXED_KEY_HEIGHT)
+        grid.endFill()
       }
-      keyY += KEY_HEIGHT
-  }
+      keyY += FIXED_KEY_HEIGHT
+    }
 
-  // Draw horizontal grid lines with precise alignment
-  grid.lineStyle(1, 0x3f3f3f, 0.5)  // Thinner lines with reduced alpha
-  for (let i = 0; i <= TOTAL_KEYS; i++) {
-      const y = i * KEY_HEIGHT
+    // Draw horizontal grid lines
+    grid.lineStyle(1, 0x3f3f3f, 0.5)
+    for (let i = 0; i <= TOTAL_KEYS; i++) {
+      const y = Math.floor(i * FIXED_KEY_HEIGHT) // Use Math.floor for pixel-perfect alignment
       grid.moveTo(0, y)
       grid.lineTo(gridWidth, y)
-  }
+    }
 
-  // Draw vertical grid lines
-  const GRID_UNIT_WIDTH = 50
-  for (let x = 0; x <= gridWidth; x += GRID_UNIT_WIDTH) {
+    // Draw vertical grid lines
+    const GRID_UNIT_WIDTH = 50
+    for (let x = 0; x <= gridWidth; x += GRID_UNIT_WIDTH) {
       grid.moveTo(x, 0)
-      grid.lineTo(x, TOTAL_KEYS * KEY_HEIGHT)
-  }
+      grid.lineTo(x, TOTAL_KEYS * FIXED_KEY_HEIGHT)
+    }
 
-  gridStage.addChild(grid)
-}
+    gridStage.addChild(grid)
+  }
 
   // Draw notes
   const drawNotes = (notes: Note[]) => {
@@ -144,6 +146,8 @@ const drawGrid = (gridWidth: number) => {
     const TICKS_PER_BEAT = ustxData.resolution || 480
     const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
     const NOTE_HEIGHT = KEY_HEIGHT // Height of one semitone, matching the key height
+    const FIXED_NOTE_HEIGHT = KEY_HEIGHT // Use the same constant height
+
 
     notes.forEach((note) => {
       const { position, duration, tone, lyric } = note
@@ -156,7 +160,7 @@ const drawGrid = (gridWidth: number) => {
       const keyIndex = TOTAL_KEYS - noteNumber - 1 // Reverse the key index to match the piano orientation
 
       // Calculate the y position (pitch axis)
-      const y = keyIndex * NOTE_HEIGHT
+      const y = keyIndex * FIXED_NOTE_HEIGHT
 
       // Calculate the width (duration)
       const durationBeats = duration / TICKS_PER_BEAT
@@ -166,7 +170,7 @@ const drawGrid = (gridWidth: number) => {
       const noteGraphics = new PIXI.Graphics()
       noteGraphics.beginFill(0xffd700)
       noteGraphics.lineStyle(1, 0x000000)
-      noteGraphics.drawRect(x, y, width, NOTE_HEIGHT)
+      noteGraphics.drawRect(x, y, width, FIXED_NOTE_HEIGHT)
       noteGraphics.endFill()
 
       // Add the lyric text
@@ -266,24 +270,24 @@ const drawGrid = (gridWidth: number) => {
     }
 
     // Handle resize event
-    // window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', handleResize)
 
-    // Synchronize vertical scrolling between piano and grid containers
-    const syncScroll = () => {
+    // Synchronize vertical scrolling between piano and grid containers with debouncing
+    const syncScroll = debounce(() => {
       if (!pianoContainerRef.current || !gridContainerRef.current) return
       const scrollTop = gridContainerRef.current.scrollTop;
       if (pianoContainerRef.current.scrollTop !== scrollTop) {
         pianoContainerRef.current.scrollTop = scrollTop;
       }
-    }
+    }, 10); // Adjust debounce delay as needed
 
-    const syncScrollReverse = () => {
+    const syncScrollReverse = debounce(() => {
       if (!pianoContainerRef.current || !gridContainerRef.current) return
       const scrollTop = pianoContainerRef.current.scrollTop;
       if (gridContainerRef.current.scrollTop !== scrollTop) {
         gridContainerRef.current.scrollTop = scrollTop;
       }
-    }
+    }, 10);
 
     gridContainerRef.current.addEventListener('scroll', syncScroll)
     pianoContainerRef.current.addEventListener('scroll', syncScrollReverse)
@@ -348,43 +352,44 @@ const drawGrid = (gridWidth: number) => {
     drawNotes(notes) // Always redraw notes after grid
   }
 
-// Modify the useEffect that handles USTX data loading
-useEffect(() => {
-  if (!gridAppRef.current || !gridContainerRef.current || !ustxData) return
+  // Modify the useEffect that handles USTX data loading
+  useEffect(() => {
+    if (!gridAppRef.current || !gridContainerRef.current || !ustxData) return
 
-  const gridApp = gridAppRef.current
-  const TICKS_PER_BEAT = ustxData.resolution || 480
-  const GRID_UNIT_WIDTH = 50
-  const totalTicks = getTotalDurationInTicks(notes)
-  const totalBeats = totalTicks / TICKS_PER_BEAT
-  const gridWidth = totalBeats * GRID_UNIT_WIDTH
-  const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
-  const fullHeight = TOTAL_KEYS * KEY_HEIGHT
+    const gridApp = gridAppRef.current
+    const TICKS_PER_BEAT = ustxData.resolution || 480
+    const GRID_UNIT_WIDTH = 50
+    const totalTicks = getTotalDurationInTicks(notes)
+    const totalBeats = totalTicks / TICKS_PER_BEAT
+    const gridWidth = totalBeats * GRID_UNIT_WIDTH
+    const newWidth = Math.max(gridContainerRef.current.clientWidth, gridWidth)
+    const fullHeight = TOTAL_KEYS * KEY_HEIGHT
 
-  // Ensure grid container has proper dimensions
-  if (gridContainerRef.current) {
-      gridContainerRef.current.style.position = 'relative'
-      gridContainerRef.current.style.overflow = 'auto'
-      gridContainerRef.current.style.height = '100%'
-  }
 
-  // Set up the canvas with precise positioning
-  const canvas = gridApp.view as HTMLCanvasElement
-  canvas.style.position = 'absolute'
-  canvas.style.top = '0'
-  canvas.style.left = '0'
-  canvas.style.width = `${newWidth}px`
-  canvas.style.height = `${fullHeight}px`
+    // Ensure grid container has proper dimensions
+    if (gridContainerRef.current) {
+        gridContainerRef.current.style.position = 'relative'
+        gridContainerRef.current.style.overflow = 'auto'
+        gridContainerRef.current.style.height = '600px' // Ensure height is set correctly
+    }
 
-  // Resize with precise dimensions
-  gridApp.renderer.resize(newWidth, fullHeight)
+    // Set up the canvas with precise positioning
+    const canvas = gridApp.view as HTMLCanvasElement
+    canvas.style.position = 'absolute'
+    canvas.style.top = '0'
+    canvas.style.left = '0'
+    canvas.style.width = `${newWidth}px`
+    canvas.style.height = `${fullHeight}px`
 
-  // Draw grid first, then notes
-  drawGrid(newWidth)
-  if (notes.length > 0) {
-      drawNotes(notes)
-  }
-}, [ustxData, notes])
+    // Resize with precise dimensions
+    gridApp.renderer.resize(newWidth, fullHeight)
+
+    // Draw grid first, then notes
+    drawGrid(newWidth)
+    if (notes.length > 0) {
+        drawNotes(notes)
+    }
+  }, [ustxData, notes])
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -446,12 +451,12 @@ useEffect(() => {
           ref={gridContainerRef}
           className="flex-1 overflow-auto"
           style={{
-            height: '00px',
+            height: '600px', // Changed from '00px' to '600px'
             overflowX: 'auto',
             overflowY: 'auto',
           }}
         />
       </div>
     </main>
-  )
+  ) 
 }
