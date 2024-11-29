@@ -315,7 +315,7 @@ export default function Home() {
     const gridApp = gridAppRef.current
   
     const TICKS_PER_BEAT = ustxData.resolution || 480
-    const GRID_UNIT_WIDTH = 50 // Width of one beat in pixels
+    const GRID_UNIT_WIDTH = 50 // Width of one beat in pixelsd
   
     const totalTicks = getTotalDurationInTicks(notes)
     const totalBeats = totalTicks / TICKS_PER_BEAT
