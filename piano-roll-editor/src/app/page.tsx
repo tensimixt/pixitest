@@ -53,6 +53,7 @@ const KEY_WIDTH = 110
 const KEY_X_OFFSET = (PIANO_WIDTH - KEY_WIDTH) / 2
 const KEY_HEIGHT = 12
 const TOTAL_KEYS = 128
+const PIXELS_PER_BEAT = 50
 
 const totalHeight = TOTAL_KEYS * KEY_HEIGHT
 
@@ -65,6 +66,7 @@ export default function Home() {
   const [ustxData, setUstxData] = useState<UstxData | null>(null)
   const [currentBPM, setCurrentBPM] = useState<number>(120)
   const [resolution, setResolution] = useState<number>(480)
+  const [gridWidth, setGridWidth] = useState<number>(1000) // Default width
 
   const isBlackKey = (keyNumber: number): boolean => {
     const noteIndex = keyNumber % 12
@@ -79,8 +81,16 @@ export default function Home() {
   }
 
   const ticksToPixels = (ticks: number): number => {
-    const PIXELS_PER_BEAT = 50
     return (ticks / resolution) * PIXELS_PER_BEAT
+  }
+
+  const calculateGridWidth = (notes: Note[]): number => {
+    if (!notes || notes.length === 0) return 1000
+    const lastNote = notes.reduce((max, note) => {
+      const noteEnd = note.position + note.duration
+      return noteEnd > max ? noteEnd : max
+    }, 0)
+    return Math.max(1000, ticksToPixels(lastNote) + 200) // Add padding
   }
 
   const drawPianoKeys = () => {
@@ -145,7 +155,7 @@ export default function Home() {
     }
 
     // Draw vertical lines
-    const beatWidth = 50
+    const beatWidth = PIXELS_PER_BEAT
     for (let x = 0; x <= width; x += beatWidth) {
       grid.moveTo(x, 0)
       grid.lineTo(x, totalHeight)
@@ -173,14 +183,12 @@ export default function Home() {
       const width = ticksToPixels(note.duration)
       const y = (TOTAL_KEYS - note.tone - 1) * KEY_HEIGHT
 
-      // Draw note rectangle
       const noteGraphics = new PIXI.Graphics()
       noteGraphics.beginFill(0xffd700)
       noteGraphics.lineStyle(1, 0x000000)
       noteGraphics.drawRect(x, y, width, KEY_HEIGHT)
       noteGraphics.endFill()
 
-      // Add lyric text
       const lyricText = new PIXI.Text(note.lyric, {
         fontFamily: 'Arial',
         fontSize: 8,
@@ -194,7 +202,6 @@ export default function Home() {
       notesContainer.addChild(noteGraphics)
       notesContainer.addChild(lyricText)
 
-      // Draw pitch curve if it exists
       if (note.pitch?.data) {
         const pitchLine = new PIXI.Graphics()
         pitchLine.lineStyle(1, 0xff0000)
@@ -229,7 +236,15 @@ export default function Home() {
       setResolution(data.resolution)
 
       if (data.voice_parts?.[0]?.notes) {
-        drawNotes(data.voice_parts[0].notes)
+        const newWidth = calculateGridWidth(data.voice_parts[0].notes)
+        setGridWidth(newWidth)
+        
+        // Update grid app width
+        if (gridAppRef.current) {
+          gridAppRef.current.renderer.resize(newWidth, totalHeight)
+          drawGrid(newWidth)
+          drawNotes(data.voice_parts[0].notes)
+        }
       }
     } catch (error) {
       console.error('Error parsing USTX file:', error)
@@ -251,7 +266,7 @@ export default function Home() {
 
     const gridApp = new PIXI.Application({
       backgroundColor: 0x2c2c2c,
-      width: gridContainerRef.current.clientWidth,
+      width: gridWidth,
       height: totalHeight,
       antialias: true,
     })
@@ -260,7 +275,7 @@ export default function Home() {
 
     // Initial draw
     drawPianoKeys()
-    drawGrid(gridApp.screen.width)
+    drawGrid(gridWidth)
 
     // Sync scrolling
     const handleScroll = debounce((e: Event) => {
@@ -289,8 +304,6 @@ export default function Home() {
   return (
     <main className="min-h-screen p-4 bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Piano Roll Editor</h1>
-        <div className="space-x-2">
         <div>
           <h1 className="text-2xl font-bold text-white">Piano Roll Editor</h1>
           {ustxData && (
@@ -300,6 +313,7 @@ export default function Home() {
             </div>
           )}
         </div>
+        <div className="space-x-2">
           <input
             type="file"
             accept=".ustx"
