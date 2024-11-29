@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as PIXI from 'pixi.js'
 import yaml from 'js-yaml'
 import debounce from 'lodash.debounce'
+import PhonemePanel from '../components/PhonemePanel'
 
 // Define interfaces for USTX data structure
 interface UstxData {
@@ -67,6 +68,11 @@ export default function Home() {
   const [currentBPM, setCurrentBPM] = useState<number>(120)
   const [resolution, setResolution] = useState<number>(480)
   const [gridWidth, setGridWidth] = useState<number>(1000) // Default width
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+
+  const updatePhonemePanel = (note: Note) => {
+    setSelectedNote(note);
+  }
 
   const isBlackKey = (keyNumber: number): boolean => {
     const noteIndex = keyNumber % 12
@@ -188,6 +194,19 @@ export default function Home() {
       noteGraphics.lineStyle(1, 0x000000)
       noteGraphics.drawRect(x, y, width, KEY_HEIGHT)
       noteGraphics.endFill()
+
+      noteGraphics.interactive = true
+      noteGraphics.cursor = 'pointer'
+
+      noteGraphics.on('pointerdown', (event) => {
+        if (event.detail === 2) { // Check for double click
+          const newLyric = prompt('Enter new lyric:', note.lyric)
+          if (newLyric !== null && newLyric !== note.lyric) {
+            note.lyric = newLyric
+            updatePhonemePanel(note)
+          }
+        }
+      })
 
       const lyricText = new PIXI.Text(note.lyric, {
         fontFamily: 'Arial, Helvetica, sans-serif', // Multiple font fallbacks
@@ -357,6 +376,8 @@ export default function Home() {
             overflowY: 'auto',
           }}
         />
+         {selectedNote && <PhonemePanel notes={[selectedNote]} />}
+
       </div>
     </main>
   )
