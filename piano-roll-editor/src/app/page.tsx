@@ -440,7 +440,7 @@ export default function Home() {
           ref={gridContainerRef}
           className="flex-1 overflow-auto"
           style={{
-            height: '600px',
+            height: '00px',
             overflowX: 'auto',
             overflowY: 'auto',
           }}
