@@ -204,6 +204,7 @@ export default function Home() {
       let clickTimer: NodeJS.Timeout | null = null
       
       noteGraphics.on('pointerdown', (event) => {
+        console.log(event)
         clickCount++
         
         if (clickCount === 1) {
