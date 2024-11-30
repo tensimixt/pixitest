@@ -72,6 +72,7 @@ export default function Home() {
 
   const updatePhonemePanel = (note: Note) => {
     setSelectedNote(note);
+    console.log(selectedNote)
   }
 
   const isBlackKey = (keyNumber: number): boolean => {
