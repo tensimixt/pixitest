@@ -196,15 +196,72 @@ export default function Home() {
       noteGraphics.endFill()
 
       noteGraphics.interactive = true
+      
       noteGraphics.cursor = 'pointer'
 
+      let clickCount = 0
+      let clickTimer: NodeJS.Timeout | null = null
+      
       noteGraphics.on('pointerdown', (event) => {
-        if (event.detail === 2) { // Check for double click
+        clickCount++
+        
+        if (clickCount === 1) {
+          clickTimer = setTimeout(() => {
+            clickCount = 0
+          }, 300) // Reset after 300ms
+        } else if (clickCount === 2) {
+          clearTimeout(clickTimer!)
+          clickCount = 0
+          
+          // Handle double click here
           const newLyric = prompt('Enter new lyric:', note.lyric)
           if (newLyric !== null && newLyric !== note.lyric) {
             note.lyric = newLyric
-            updatePhonemePanel(note)
+            updatePhonemePanel(note) // Add this line
+            drawNotes(notes)
           }
+        }
+      })
+
+      noteGraphics.on('pointerdown', (event) => {
+        if (event.detail === 2) { // Check for double click
+          // Create an input element
+          const input = document.createElement('input')
+          input.type = 'text'
+          input.value = note.lyric
+          input.style.position = 'absolute'
+          input.style.left = `${event.global.x}px`
+          input.style.top = `${event.global.y}px`
+          input.style.zIndex = '1000'
+          input.style.background = 'white'
+          input.style.border = '1px solid black'
+          input.style.padding = '2px'
+          
+          // Add the input to the document
+          document.body.appendChild(input)
+          input.focus()
+          input.select()
+      
+          // Handle input completion
+          const handleBlur = () => {
+            if (input.value !== note.lyric) {
+              note.lyric = input.value
+              updatePhonemePanel(note)
+              drawNotes(ustxData?.voice_parts[0].notes || []) // Redraw notes to update text
+            }
+            document.body.removeChild(input)
+          }
+      
+          input.addEventListener('blur', handleBlur)
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              input.blur()
+            }
+            if (e.key === 'Escape') {
+              input.value = note.lyric // Reset to original value
+              input.blur()
+            }
+          })
         }
       })
 
@@ -376,9 +433,12 @@ export default function Home() {
             overflowY: 'auto',
           }}
         />
-         {selectedNote && <PhonemePanel notes={[selectedNote]} />}
+     
 
       </div>
+        {ustxData && ustxData.voice_parts?.[0]?.notes && (
+          <PhonemePanel notes={ustxData.voice_parts[0].notes} />
+        )}
     </main>
   )
 }

@@ -50,23 +50,27 @@ interface PhonemeData {
       }
     }, [notes]);
   
+    // Update the drawPhonemeVisualizations function
     const drawPhonemeVisualizations = (notes: Note[]) => {
-      if (!appRef.current) return;
-  
-      const container = new PIXI.Container();
-      appRef.current.stage.addChild(container);
-  
-      let xOffset = 0;
-      notes.forEach((note) => {
-        // Get phonemes for the note (dummy function for now)
-        const phonemes = dummyGetPhonemes(note.lyric);
-        
-        // Draw area chart for each phoneme
-        const noteWidth = note.duration * PIXELS_PER_TICK;
-        drawPhonemeAreaChart(container, xOffset, phonemes, noteWidth);
-        
-        xOffset += noteWidth;
-      });
+        if (!appRef.current) return;
+    
+        const container = new PIXI.Container();
+        appRef.current.stage.removeChildren(); // Clear previous visualizations
+        appRef.current.stage.addChild(container);
+    
+        // Draw phonemes for ALL notes
+        notes.forEach((note) => {
+          const phonemes = dummyGetPhonemes(note.lyric);
+          const noteWidth = note.duration * PIXELS_PER_TICK;
+          const noteX = note.position * PIXELS_PER_TICK; // Calculate x position based on note position
+    
+          drawPhonemeAreaChart(
+            container,
+            noteX, // Use note's x position
+            phonemes,
+            noteWidth
+          );
+        });
     };
   
     return (
@@ -81,17 +85,17 @@ interface PhonemeData {
     );
   };
   
-  // Helper function to draw phoneme area charts
-  const drawPhonemeAreaChart = (
+// In PhonemePanel.tsx
+const drawPhonemeAreaChart = (
     container: PIXI.Container,
-    xOffset: number,
+    xPosition: number,
     phonemes: PhonemeData[],
     totalWidth: number
   ) => {
     const height = 150;
     const totalDuration = phonemes.reduce((sum, p) => sum + p.duration, 0);
-  
-    let currentX = xOffset;
+
+    let currentX = xPosition; // Start from the note's x position
     phonemes.forEach((phoneme) => {
       const width = (phoneme.duration / totalDuration) * totalWidth;
       
@@ -101,7 +105,7 @@ interface PhonemeData {
       area.lineStyle(1, 0x000000, 0.5);
       area.drawRect(currentX, 0, width, height);
       area.endFill();
-  
+
       // Add phoneme label
       const text = new PIXI.Text(phoneme.phoneme, {
         fontSize: 12,
@@ -110,12 +114,11 @@ interface PhonemeData {
       text.x = currentX + width / 2;
       text.y = height / 2;
       text.anchor.set(0.5);
-  
+
       container.addChild(area);
       container.addChild(text);
-  
+
       currentX += width;
     });
   };
-
   export default PhonemePanel

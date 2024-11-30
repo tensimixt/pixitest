@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.note-edit-input {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    border: 1px solid black;
+    padding: 2px 4px;
+    font-size: 12px;
+    min-width: 60px;
+  }
